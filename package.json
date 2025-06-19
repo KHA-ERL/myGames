@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "dev": "npx tailwindcss -i ./public/css/tailwind.css -o ./public/css/style.css --watch"
+    "dev": "npx tailwindcss/cli -i ./public/css/tailwind.css -o ./public/css/style.css --watch"
   },
   "keywords": [],
   "author": "",
@@ -13,7 +13,8 @@
   "dependencies": {
     "@tailwindcss/cli": "^4.1.10",
     "ejs": "^3.1.10",
-    "express": "^5.1.0"
+    "express": "^5.1.0",
+    "socket.io": "^4.8.1"
   },
   "devDependencies": {
     "tailwindcss": "^4.1.10"
