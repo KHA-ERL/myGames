@@ -1,1 +1,13 @@
 <link href="/css/style.css" rel="stylesheet">
+<script src="/socket.io/socket.io.js"></script>
+<script>
+  const socket = io();
+
+  // Send a message
+  socket.emit('chat message', 'Hello from client!');
+
+  // Listen for messages
+  socket.on('chat message', (msg) => {
+    console.log('Message from server:', msg);
+  });
+</script>
