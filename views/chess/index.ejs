@@ -1,11 +1,13 @@
+<!-- views/chess/index.ejs -->
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title><%= title %></title>
-  <link href="../../public/css/style.css" rel="stylesheet">
+
+  <!-- Correctly link the CSS file -->
+  <link href="/css/output.css" rel="stylesheet">
 </head>
 
 <body class="bg-gray-900 text-white flex flex-col items-center justify-center min-h-screen space-y-4">
@@ -13,13 +15,16 @@
 
   <div class="chessboard shadow-lg rounded-md overflow-hidden"></div>
 
+  <!-- External Libraries -->
   <script src="https://cdn.socket.io/4.8.1/socket.io.min.js"
-    integrity="sha384-mkQ3/7FUtcGyoppY6bz/PORYoGqOl7/aSUMn2ymDOJcapfS6PHqxhRTMh1RR0Q6+"
-    crossorigin="anonymous"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.3/chess.min.js"
-    integrity="sha512-xRllwz2gdZciIB+AkEbeq+gVhX8VB8XsfqeFbUh+SzHlN96dEduwtTuVuc2u9EROlmW9+yhRlxjif66ORpsgVA=="
-    crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-  <script src="../../public/js/chess.js"></script>
-</body>
+          integrity="sha384-mkQ3/7FUtcGyoppY6bz/PORYoGqOl7/aSUMn2ymDOJcapfS6PHqxhRTMh1RR0Q6+"
+          crossorigin="anonymous"></script>
 
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.3/chess.min.js"
+          integrity="sha512-xRllwz2gdZciIB+AkEbeq+gVhX8VB8XsfqeFbUh+SzHlN96dEduwtTuVuc2u9EROlmW9+yhRlxjif66ORpsgVA=="
+          crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+
+  <!-- Your custom chess logic -->
+  <script src="/js/chess.js"></script>
+</body>
 </html>

@@ -1,54 +1,58 @@
-/*! tailwindcss v4.1.10 | MIT License | https://tailwindcss.com */
+@import "tailwindcss";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Custom chess styles */
 .chessboard {
-        display: grid;
-        grid-template-columns: repeat(8, minmax(0, 1fr));
-        grid-template-rows: repeat(8, minmax(0, 1fr));
-        width: 400px;
-        height: 400px;
-        transform: rotate(0deg);
-    }
+  display: grid;
+  grid-template-columns: repeat(8, minmax(0, 1fr));
+  grid-template-rows: repeat(8, minmax(0, 1fr));
+  width: 400px;
+  height: 400px;
+  transform: rotate(0deg);
+}
 
-    .piece.white {
-        color: white;
-        filter: drop-shadow(0 0 2px rgba(0, 0, 0, 1));
-    }
+.square.light {
+  background-color: #f0d9b5;
+}
 
-    .piece.black {
-        color: black;
-    }
+.square.dark {
+  background-color: #b58863;
+}
 
-    .flipped {
-        transform: rotate(180deg);
-    }
+.piece.white {
+  color: white;
+  filter: drop-shadow(0 0 2px rgba(0, 0, 0, 1));
+}
 
-    .square {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    }
+.piece.black {
+  color: black;
+}
 
-    .square.light {
-        background-color: #f0d9b5;
-    }
+.flipped {
+  transform: rotate(180deg);
+}
 
-    .square.dark {
-        background-color: #b58863;
-    }
+.square {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
 
-    .piece {
-        font-size: 36px;
-        cursor: pointer;
-    }
+.piece {
+  font-size: 36px;
+  cursor: pointer;
+}
 
-    .piece.draggable {
-        cursor: grab;
-    }
+.piece.draggable {
+  cursor: grab;
+}
 
-    .dragging {
-        opacity: 0.5;
-    }
+.dragging {
+  opacity: 0.5;
+}
 
-    /* Rotate pieces for black player */
-    .flipped .piece {
-        transform: rotate(180deg);
-    }
+.flipped .piece {
+  transform: rotate(180deg);
+}

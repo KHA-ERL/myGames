@@ -24,7 +24,7 @@
 
 
     app.get("/", (req, res) => {
-        res.render("index", { title: "Welcome to the Chess Game" });
+        res.render("chess/index", { title: "Welcome to the Chess Game" });
     });
 
     io.on("connection", function (uniquesocket) {
