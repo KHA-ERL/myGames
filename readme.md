@@ -9,4 +9,8 @@ Cheap / free deposit and withdrawal commission<br />
 All in cashout for every win<br />
 Player peering based on skill levels<br />
 Skill grading system to prevent cheating.<br />
-Crypto, Fiat deposits & withdrawals
+Crypto, Fiat deposits & withdrawals. <br />
+
+
+Run with<br />
+nodemon app.js

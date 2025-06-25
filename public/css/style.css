@@ -41,6 +41,7 @@
 }
 
 .piece {
+  font-family: 'ChessMedium', sans-serif;
   font-size: 36px;
   cursor: pointer;
 }
