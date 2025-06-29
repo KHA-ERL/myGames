@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title><%= title %></title>
+  <link href="/css/output.css" rel="stylesheet" />
+  <script src="/socket.io/socket.io.js"></script>
+</head>
+<body>
+  <main class="flex flex-col items-center justify-center mt-10 space-y-4">
+    <div class="flex items-center">
+      <h2 class="red-turn-text">Red's Turn</h2>
+      <div id="divider">|</div>
+      <h2 class="black-turn-text">Black's Turn</h2>
+    </div>
+
+    <table>
+      <tbody>
+        <% for(let row = 0; row < 8; row++) { %>
+          <tr>
+            <% for(let col = 0; col < 8; col++) {
+              const index = row * 8 + col;
+              const playable = (row + col) % 2 !== 0;
+            %>
+              <td class="<%= playable ? '' : 'noPieceHere' %>">
+                <% if (index < 24 && playable) { %>
+                  <span class="black-piece" id="<%= index %>"></span>
+                <% } else if (index > 39 && playable) { %>
+                  <p class="red-piece" id="<%= index %>"></p>
+                <% } %>
+              </td>
+            <% } %>
+          </tr>
+        <% } %>
+      </tbody>
+    </table>
+  </main>
+
+  <script>
+    const gameId = "<%= gameId %>";
+    const socket = io("/checkers");
+    socket.emit("joinRoom", gameId);
+    window.socket = socket; // expose for game logic
+  </script>
+
+  <script src="/js/games/checkers.js" defer></script>
+</body>
+</html>
