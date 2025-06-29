@@ -255,7 +255,8 @@
   transform: rotate(180deg);
 }
 .square.highlight {
-  outline: 2px solid yellow;
+  outline: px solid;
+  background-color: ;
 }
 .highlight-yellow {
   background-color: yellow !important;

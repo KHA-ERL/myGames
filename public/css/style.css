@@ -59,7 +59,8 @@
 }
 
 .square.highlight {
-  outline: 2px solid yellow;
+  outline: 2px solid;
+  background-color: rgba(255, 255, 0, 0.5) !important; /* pale yellow for click */;
 }
 
 .highlight-yellow {

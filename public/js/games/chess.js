@@ -5,6 +5,7 @@ const boardElement = document.querySelector(".chessboard");
 let draggedPiece = null;
 let sourceSquare = null;
 let playerRole = null;
+let lastMove = null;
 
 let clickSource = null; // For click-to-move
 
@@ -40,6 +41,27 @@ const renderBoard = () => {
       );
       squareElement.dataset.row = rowIndex;
       squareElement.dataset.col = squareIndex;
+      // ✅ Add highlight for last move
+      const squarePos = `${String.fromCharCode(97 + squareIndex)}${
+        8 - rowIndex
+      }`;
+
+      // Highlight last move (from and to)
+      if (
+        lastMove &&
+        (squarePos === lastMove.from || squarePos === lastMove.to)
+      ) {
+        squareElement.classList.add("highlight-yellow");
+      }
+
+      // Highlight click selection (only one)
+      if (
+        clickSource &&
+        clickSource.row === rowIndex &&
+        clickSource.col === squareIndex
+      ) {
+        squareElement.classList.add("highlight");
+      }
 
       if (square) {
         const pieceElement = document.createElement("div");
@@ -120,6 +142,7 @@ const renderBoard = () => {
 
         const result = chess.move(move);
         if (result) {
+          lastMove = { from: move.from, to: move.to }; // ✅ Track last click move
           socket.emit("move", move);
         } else {
           console.log("Invalid move:", move);
@@ -137,34 +160,35 @@ const renderBoard = () => {
 };
 
 const handleClickMove = (row, col) => {
-    const pos = `${String.fromCharCode(97 + col)}${8 - row}`; // a1-h8 format
-    const piece = chess.get(pos);
+  const pos = `${String.fromCharCode(97 + col)}${8 - row}`; // a1-h8 format
+  const piece = chess.get(pos);
 
-    // First click - select piece
-    if (!clickSource) {
-        if (piece && piece.color === playerRole) {
-            clickSource = { row, col, pos };
-            highlightSquare(row, col);
-        }
-        return;
+  // First click - select piece
+  if (!clickSource) {
+    if (piece && piece.color === playerRole) {
+      clickSource = { row, col, pos };
+      highlightSquare(row, col);
     }
+    return;
+  }
 
-    // Second click - try to move
-    const move = {
-        from: clickSource.pos,
-        to: pos,
-        promotion: "q", // auto promote to queen
-    };
+  // Second click - try to move
+  const move = {
+    from: clickSource.pos,
+    to: pos,
+    promotion: "q", // auto promote to queen
+  };
 
-    const result = chess.move(move);
-    if (result) {
-        socket.emit("move", move);
-    } else {
-        console.log("Invalid move:", move);
-    }
+  const result = chess.move(move);
+  if (result) {
+    lastMove = { from: move.from, to: move.to };  // ✅ Save last move
+    socket.emit("move", move);
+  } else {
+    console.log("Invalid move:", move);
+  }
 
-    clickSource = null;
-    renderBoard();
+  clickSource = null;
+  renderBoard();
 };
 
 const handleMove = (source, target) => {
@@ -178,8 +202,9 @@ const handleMove = (source, target) => {
 
   const result = chess.move(move);
   if (result) {
+    lastMove = { from: move.from, to: move.to }; // ✅ Save the move
     socket.emit("move", move);
-    renderBoard();
+    renderBoard(); // Rerender board with highlight
   } else {
     console.log("Invalid move:", move);
   }
@@ -189,10 +214,10 @@ const handleMove = (source, target) => {
 };
 
 const highlightSquare = (row, col) => {
-    renderBoard(); // clear old highlights
-    const selector = `[data-row="${row}"][data-col="${col}"]`;
-    const square = document.querySelector(selector);
-    if (square) square.classList.add("highlight-yellow");
+  renderBoard(); // clear old highlights
+  const selector = `[data-row="${row}"][data-col="${col}"]`;
+  const square = document.querySelector(selector);
+  if (square) square.classList.add("highlight-yellow");
 };
 
 // Socket Events
