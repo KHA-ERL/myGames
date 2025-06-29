@@ -57,3 +57,13 @@
 .flipped .piece {
   transform: rotate(180deg);
 }
+
+.square.highlight {
+  outline: 2px solid yellow;
+}
+
+.highlight-yellow {
+    background-color: yellow !important;
+}
+
+
