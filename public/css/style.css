@@ -1,7 +1,4 @@
 @import "tailwindcss";
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
 
 /* Custom chess styles */
 .chessboard {
@@ -58,13 +55,98 @@
   transform: rotate(180deg);
 }
 
-.square.highlight {
-  outline: 2px solid;
-  background-color: rgba(255, 255, 0, 0.5) !important; /* pale yellow for click */;
+.noPieceHere {
+  background-color: #F0D2B4; /* custom color */
 }
 
-.highlight-yellow {
-    background-color: yellow !important;
+td {
+  @apply text-center;
+  background-color: #BA7A3A; /* custom color */
+  width: 65px;
+  height: 65px;
 }
 
+.red-turn-text {
+  @apply text-center text-black text-[55px] font-sans;
+  font-family: "Open Sans", sans-serif;
+}
 
+.black-turn-text {
+  @apply text-center text-gray-300 text-[55px] font-sans;
+  font-family: "Open Sans", sans-serif;
+}
+
+.red-piece {
+  @apply w-[20px] h-[20px] p-[12px] bg-red-600 border border-white rounded-full inline-block;
+}
+
+.black-piece {
+  @apply w-[20px] h-[20px] p-[12px] bg-black border border-white rounded-full inline-block;
+}
+
+.king.red-piece {
+  background-color: orange;
+}
+
+.king.black-piece {
+  background-color: purple;
+}
+
+#divider {
+  @apply text-[90px] mx-[15px];
+}
+
+p, span {
+  @apply inline-block;
+}
+
+/* Responsive sizes for pieces and board cells */
+@media (max-width: 560px) {
+  .red-piece, .black-piece {
+    height: 4.5vw;
+    width: 4.5vw;
+  }
+
+  td {
+    width: 12vw;
+    height: 12vw;
+  }
+
+  .red-turn-text, .black-turn-text {
+    font-size: 40px;
+  }
+
+  table {
+    margin: 0;
+  }
+
+  .red-turn-text {
+    transform: rotate(-180deg);
+    filter: progid:DXImageTransform.Microsoft.BasicImage(rotation=2);
+  }
+}
+
+@media (max-width: 380px) {
+  .red-piece, .black-piece {
+    height: 3vw;
+    width: 3vw;
+  }
+}
+
+@media (max-width: 345px) {
+  .red-piece, .black-piece {
+    height: 2.5vw;
+    width: 2.5vw;
+  }
+}
+
+@media (max-width: 300px) {
+  .red-piece, .black-piece {
+    height: 1.5vw;
+    width: 1.5vw;
+  }
+
+  .red-turn-text, .black-turn-text {
+    font-size: 35px;
+  }
+}

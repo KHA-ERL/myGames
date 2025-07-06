@@ -1,31 +1,79 @@
-<!-- views/chess/index.ejs -->
 <!DOCTYPE html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title><%= title %></title>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title><%= title %></title>
 
-  <!-- Correctly link the CSS file -->
-  <link href="/css/output.css" rel="stylesheet">
-  <link rel="stylesheet" href="https://fontlibrary.org//face/chess" type="text/css"/>
-</head>
+    <link href="/css/output.css" rel="stylesheet" />
+    <link
+      rel="stylesheet"
+      href="https://fontlibrary.org//face/chess"
+      type="text/css"
+    />
+  </head>
+  <body
+    class="bg-gray-900 text-white flex flex-col items-center justify-center min-h-screen space-y-4"
+  >
+    <h1 class="text-3xl font-bold mb-4"><%= title %></h1>
 
-<body class="bg-gray-900 text-white flex flex-col items-center justify-center min-h-screen space-y-4">
-  <h1 class="text-3xl font-bold"><%= title %></h1>
+    <!-- Timer Display -->
+    <div class="flex justify-between w-full max-w-md text-center text-lg mb-2">
+      <div class="rounded-2xl text-amber-500 text-2xl w-max py-2 px-3"><span id="whiteClock" class="font-bold">00:00</span></div>
+      <div class="rounded-2xl text-amber-500 text-2xl w-max py-2 px-3"><span id="blackClock" class="font-bold">00:00</span></div>
+    </div>
 
-  <div class="chessboard shadow-lg rounded-md overflow-hidden"></div>
+    <!-- Chessboard -->
+    <div class="chessboard shadow-lg rounded-md overflow-hidden mt-4"></div>
 
-  <!-- External Libraries -->
-  <script src="https://cdn.socket.io/4.8.1/socket.io.min.js"
-          integrity="sha384-mkQ3/7FUtcGyoppY6bz/PORYoGqOl7/aSUMn2ymDOJcapfS6PHqxhRTMh1RR0Q6+"
-          crossorigin="anonymous"></script>
+    <!-- Waiting Indicator -->
+    <div id="waiting" class="text-yellow-500 mt-4 hidden">
+      Waiting for opponent...
+    </div>
 
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.3/chess.min.js"
-          integrity="sha512-xRllwz2gdZciIB+AkEbeq+gVhX8VB8XsfqeFbUh+SzHlN96dEduwtTuVuc2u9EROlmW9+yhRlxjif66ORpsgVA=="
-          crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <!-- Time Selection Modal -->
+    <div
+      id="timerModal"
+      class="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50"
+    >
+      <div class="bg-gray-800 p-6 rounded-lg text-center space-y-4">
+        <h2 class="text-2xl mb-2 font-bold">Choose Game Time</h2>
+        <div class="space-x-4">
+          <button
+            class="select-time bg-blue-600 px-4 py-2 rounded-md"
+            data-time="60"
+          >
+            1 Min
+          </button>
+          <button
+            class="select-time bg-blue-600 px-4 py-2 rounded-md"
+            data-time="300"
+          >
+            5 Min
+          </button>
+          <button
+            class="select-time bg-blue-600 px-4 py-2 rounded-md"
+            data-time="600"
+          >
+            10 Min
+          </button>
+        </div>
+      </div>
+    </div>
 
-  <!-- Your custom chess logic -->
-  <script src="/js/games/chess.js"></script>
-</body>
+    <!-- Scripts -->
+    <!-- External Libraries -->
+    <script
+      src="https://cdn.socket.io/4.8.1/socket.io.min.js"
+      integrity="sha384-mkQ3/7FUtcGyoppY6bz/PORYoGqOl7/aSUMn2ymDOJcapfS6PHqxhRTMh1RR0Q6+"
+      crossorigin="anonymous"
+    ></script>
+    <script
+      src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.3/chess.min.js"
+      integrity="sha512-xRllwz2gdZciIB+AkEbeq+gVhX8VB8XsfqeFbUh+SzHlN96dEduwtTuVuc2u9EROlmW9+yhRlxjif66ORpsgVA=="
+      crossorigin="anonymous"
+      referrerpolicy="no-referrer"
+    ></script>
+    <script src="/js/games/chess.js"></script>
+  </body>
 </html>

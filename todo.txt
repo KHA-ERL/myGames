@@ -1,0 +1,29 @@
+Timer✅
+
+White selected by random when both players are paired into a match✅
+
+while waiting for opponent if nobody joins within 120 seconds return player to lobby.✅
+
+hide waiting for opponent after players pair to a match✅
+
+When a player makes a move, pause their clock and begin their opponents clock automatically while making the clock time of both players visible to them and probably spectators in the future when we implement spectator mode.✅
+
+At game beginning if white or black doesn't make their first move in the first 10 seconds, cancel game and return both parties to lobby.✅
+
+When timer countdown expires for either player, game should pause for both players including opponent timer then whichever player is short on time should be declared loser and the opponent winner.✅
+
+Multi board color option.
+
+chess video
+
+new chess features
+
+code mini mail extraction tool with default ip
+
+so when two players that select a time duration get paired up, give them a roomId where the match occurs on and repeat this for all players and game duration selected. Then make it so in every roomId if either player refreshes their browser or gets disconnected when they reconnect they're automatically brought back to continue the game.
+2. I want the player ran out of time notification to appear as a notification on the screen and not an alert()
+
+for example
+
+
+

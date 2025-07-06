@@ -2,15 +2,20 @@ const socket = io();
 const chess = new Chess();
 const boardElement = document.querySelector(".chessboard");
 
-let draggedPiece = null;
-let sourceSquare = null;
 let playerRole = null;
+let currentTurn = "w";
+let timeLeft = { w: 0, b: 0 };
+let myRoom = null;
 let lastMove = null;
+let whiteId = null;
+let blackId = null;
+let sourceSquare = null;
+let clickSource = null;
+let waitingTimeout = null;
 
-let clickSource = null; // For click-to-move
-
+// Unicode for chess pieces
 const getPieceUnicode = (piece) => {
-  const unicodePieces = {
+  const pieces = {
     p: "♟",
     n: "♞",
     b: "♝",
@@ -25,220 +30,208 @@ const getPieceUnicode = (piece) => {
     K: "♔",
   };
   const symbol = piece.color === "w" ? piece.type.toUpperCase() : piece.type;
-  return unicodePieces[symbol] || "";
+  return pieces[symbol] || "";
 };
+
+const formatTime = (sec) => {
+  const m = Math.floor(sec / 60)
+    .toString()
+    .padStart(2, "0");
+  const s = (sec % 60).toString().padStart(2, "0");
+  return `${m}:${s}`;
+};
+
+const updateClocks = () => {
+  document.getElementById("whiteClock").textContent = formatTime(timeLeft.w);
+  document.getElementById("blackClock").textContent = formatTime(timeLeft.b);
+};
+
+const stopClocks = () => {
+  clearInterval(whiteTimer);
+  clearInterval(blackTimer);
+};
+
+function startClock(color) {
+  stopClocks(); // Stop any existing timer
+
+  if (color === "w") {
+    whiteTimer = setInterval(() => {
+      timeLeftW--;
+      updateClocks();
+      if (timeLeftW <= 0) {
+        stopClocks();
+        socket.emit("gameOver", {
+          reason: "White ran out of time, Black wins",
+        });
+      }
+    }, 1000);
+  } else {
+    blackTimer = setInterval(() => {
+      timeLeftB--;
+      updateClocks();
+      if (timeLeftB <= 0) {
+        stopClocks();
+        socket.emit("gameOver", {
+          reason: "Black ran out of time, White wins",
+        });
+      }
+    }, 1000);
+  }
+}
 
 const renderBoard = () => {
   const board = chess.board();
   boardElement.innerHTML = "";
 
-  board.forEach((row, rowIndex) => {
-    row.forEach((square, squareIndex) => {
-      const squareElement = document.createElement("div");
-      squareElement.classList.add(
+  board.forEach((row, rIdx) => {
+    row.forEach((square, cIdx) => {
+      const squareEl = document.createElement("div");
+      squareEl.classList.add(
         "square",
-        (rowIndex + squareIndex) % 2 === 0 ? "light" : "dark"
+        (rIdx + cIdx) % 2 === 0 ? "light" : "dark"
       );
-      squareElement.dataset.row = rowIndex;
-      squareElement.dataset.col = squareIndex;
-      // ✅ Add highlight for last move
-      const squarePos = `${String.fromCharCode(97 + squareIndex)}${
-        8 - rowIndex
-      }`;
+      const pos = `${String.fromCharCode(97 + cIdx)}${8 - rIdx}`;
 
-      // Highlight last move (from and to)
-      if (
-        lastMove &&
-        (squarePos === lastMove.from || squarePos === lastMove.to)
-      ) {
-        squareElement.classList.add("highlight-yellow");
-      }
-
-      // Highlight click selection (only one)
-      if (
-        clickSource &&
-        clickSource.row === rowIndex &&
-        clickSource.col === squareIndex
-      ) {
-        squareElement.classList.add("highlight");
+      if (lastMove && (lastMove.from === pos || lastMove.to === pos)) {
+        squareEl.classList.add("highlight-yellow");
       }
 
       if (square) {
-        const pieceElement = document.createElement("div");
-        pieceElement.classList.add(
+        const pieceEl = document.createElement("div");
+        pieceEl.classList.add(
           "piece",
           square.color === "w" ? "white" : "black"
         );
-        pieceElement.innerText = getPieceUnicode(square);
-        pieceElement.draggable = playerRole === square.color;
+        pieceEl.textContent = getPieceUnicode(square);
+        pieceEl.draggable = playerRole === square.color;
 
-        // Drag logic
-        pieceElement.addEventListener("dragstart", (e) => {
-          if (pieceElement.draggable) {
-            draggedPiece = pieceElement;
-            sourceSquare = { row: rowIndex, col: squareIndex };
-            e.dataTransfer.setData("text/plain", "");
-          }
+        pieceEl.addEventListener("dragstart", (e) => {
+          if (!pieceEl.draggable) return;
+          e.dataTransfer.setData("text/plain", "");
+          sourceSquare = pos;
         });
 
-        pieceElement.addEventListener("dragend", () => {
-          draggedPiece = null;
-          sourceSquare = null;
-        });
-
-        // Click-to-move: select source
-        pieceElement.addEventListener("click", () => {
-          if (playerRole === square.color) {
-            clickSource = { row: rowIndex, col: squareIndex };
-            highlightSquare(squareElement);
-          }
-        });
-
-        squareElement.appendChild(pieceElement);
+        squareEl.appendChild(pieceEl);
       }
 
-      // Drag logic
-      squareElement.addEventListener("dragover", (e) => e.preventDefault());
-      squareElement.addEventListener("drop", (e) => {
-        e.preventDefault();
-        if (draggedPiece && sourceSquare) {
-          const targetSquare = {
-            row: parseInt(squareElement.dataset.row),
-            col: parseInt(squareElement.dataset.col),
-          };
-          handleMove(sourceSquare, targetSquare);
-        }
+      squareEl.addEventListener("dragover", (e) => e.preventDefault());
+      squareEl.addEventListener("drop", () => {
+        if (!sourceSquare) return;
+        attemptMove(sourceSquare, pos);
+        sourceSquare = null;
       });
 
-      // Click-to-move: select destination
-      squareElement.addEventListener("click", () => {
-        handleClickMove(rowIndex, squareIndex);
-        const row = parseInt(squareElement.dataset.row);
-        const col = parseInt(squareElement.dataset.col);
-        const pos = `${String.fromCharCode(97 + col)}${8 - row}`;
-        const piece = chess.get(pos);
-
-        // First click: select piece
+      squareEl.addEventListener("click", () => {
         if (!clickSource) {
-          if (piece && piece.color === playerRole) {
-            clickSource = { row, col, pos };
-
-            // Highlight selected square
-            renderBoard();
-            const selected = document.querySelector(
-              `[data-row="${row}"][data-col="${col}"]`
-            );
-            if (selected) selected.classList.add("highlight-yellow");
+          if (square && square.color === playerRole) {
+            clickSource = pos;
           }
-          return;
-        }
-
-        // Second click: attempt move
-        const move = {
-          from: clickSource.pos,
-          to: pos,
-          promotion: "q",
-        };
-
-        const result = chess.move(move);
-        if (result) {
-          lastMove = { from: move.from, to: move.to }; // ✅ Track last click move
-          socket.emit("move", move);
         } else {
-          console.log("Invalid move:", move);
+          attemptMove(clickSource, pos);
+          clickSource = null;
         }
-
-        clickSource = null;
-        renderBoard(); // Clear board + highlight
       });
 
-      boardElement.appendChild(squareElement);
+      boardElement.appendChild(squareEl);
     });
   });
 
   boardElement.classList.toggle("flipped", playerRole === "b");
 };
 
-const handleClickMove = (row, col) => {
-  const pos = `${String.fromCharCode(97 + col)}${8 - row}`; // a1-h8 format
-  const piece = chess.get(pos);
-
-  // First click - select piece
-  if (!clickSource) {
-    if (piece && piece.color === playerRole) {
-      clickSource = { row, col, pos };
-      highlightSquare(row, col);
-    }
-    return;
-  }
-
-  // Second click - try to move
-  const move = {
-    from: clickSource.pos,
-    to: pos,
-    promotion: "q", // auto promote to queen
-  };
-
+const attemptMove = (from, to) => {
+  const move = { from, to, promotion: "q" };
   const result = chess.move(move);
   if (result) {
-    lastMove = { from: move.from, to: move.to };  // ✅ Save last move
-    socket.emit("move", move);
+    lastMove = { from, to };
+    renderBoard();
+    currentTurn = currentTurn === "w" ? "b" : "w";
+    socket.emit("move", { move, room: myRoom });
   } else {
-    console.log("Invalid move:", move);
+    console.log("Invalid move");
+  }
+};
+
+// Time select buttons (trigger matchmaking)
+document.querySelectorAll(".select-time").forEach((btn) => {
+  btn.addEventListener("click", () => {
+    const selectedTime = parseInt(btn.dataset.time);
+    document.getElementById("waiting")?.classList.remove("hidden");
+    document.getElementById("timerModal")?.remove(); // Hide modal
+    socket.emit("chess:selectTime", { time: selectedTime });
+  });
+});
+
+// Player assignment
+socket.on("playerRole", ({ white, black }) => {
+  const myId = socket.id;
+  playerRole = myId === white ? "w" : "b";
+  localStorage.setItem("chess-role", playerRole);
+
+  // ✅ Hide waiting screen
+  document.getElementById("waiting").classList.add("hidden");
+
+  // ✅ Cancel auto-return timer
+  if (waitingTimeout) {
+    clearTimeout(waitingTimeout);
+    waitingTimeout = null;
   }
 
-  clickSource = null;
-  renderBoard();
-};
-
-const handleMove = (source, target) => {
-  const move = {
-    from: `${String.fromCharCode(97 + source.col)}${8 - source.row}`,
-    to: `${String.fromCharCode(97 + target.col)}${8 - target.row}`,
-    promotion: "q",
-  };
-
-  console.log("Attempting move:", move);
-
-  const result = chess.move(move);
-  if (result) {
-    lastMove = { from: move.from, to: move.to }; // ✅ Save the move
-    socket.emit("move", move);
-    renderBoard(); // Rerender board with highlight
-  } else {
-    console.log("Invalid move:", move);
-  }
-
-  draggedPiece = null;
-  sourceSquare = null;
-};
-
-const highlightSquare = (row, col) => {
-  renderBoard(); // clear old highlights
-  const selector = `[data-row="${row}"][data-col="${col}"]`;
-  const square = document.querySelector(selector);
-  if (square) square.classList.add("highlight-yellow");
-};
-
-// Socket Events
-socket.on("playerRole", (role) => {
-  playerRole = role;
   renderBoard();
 });
 
-socket.on("spectatorRole", () => {
-  playerRole = null;
+// Game start clock and assign room
+socket.on("chess:startClock", ({ time, room }) => {
+  myRoom = room;
+  localStorage.setItem("chess-room", room);
+  timeLeftW = time;
+  timeLeftB = time;
+  updateClocks();
+  // Initial render
   renderBoard();
 });
 
+// Sync moves / Receive FEN
 socket.on("boardState", (fen) => {
   chess.load(fen);
   renderBoard();
 });
 
+// Move sync
 socket.on("move", (move) => {
   chess.move(move);
+  lastMove = { from: move.from, to: move.to };
+  currentTurn = currentTurn === "w" ? "b" : "w";
   renderBoard();
 });
 
-renderBoard();
+// Show waiting UI
+socket.on("chess:waiting", () => {
+  document.getElementById("waiting")?.classList.remove("hidden");
+  // Start 120s timeout
+  waitingTimeout = setTimeout(() => {
+    alert("No opponent joined within 2 minutes. Returning to lobby.");
+    window.location.href = "/";
+  }, 120000); // 120 seconds
+});
+
+// Game aborted (disconnect or timeout)
+socket.on("gameAborted", ({ reason }) => {
+  alert(`Game ended: ${reason}`);
+  localStorage.removeItem("chess-room");
+  window.location.href = "/";
+});
+
+// Clock updates every second
+socket.on("clockUpdate", (newTimes) => {
+  timeLeft = newTimes;
+  updateClocks();
+});
+
+// Restore game if room exists
+window.addEventListener("load", () => {
+  const savedRoom = localStorage.getItem("chess-room");
+  if (savedRoom) {
+    socket.emit("reconnectGame", { room: savedRoom });
+  }
+});
