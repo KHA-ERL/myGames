@@ -2,7 +2,10 @@ tailwind.config.js
 
 /** @type {import('tailwindcss').Config} */
 module.exports = {
-  content: ["./views/**/*.ejs"],
+  content: ["./views/**/*.ejs", "./public/js/**/*.js"],
+  safelist: [
+    "bg-lime-300", // ensures Tailwind includes this class
+  ],
   theme: {
     extend: {
       animation: {

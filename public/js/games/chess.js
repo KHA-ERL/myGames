@@ -88,12 +88,26 @@ const renderBoard = () => {
       const squareEl = document.createElement("div");
       squareEl.classList.add(
         "square",
-        (rIdx + cIdx) % 2 === 0 ? "light" : "dark"
+        "w-12",
+        "h-12",
+        "flex",
+        "items-center",
+        "justify-center",
+        "text-3xl",
+        "cursor-pointer",
+        (rIdx + cIdx) % 2 === 0 ? "bg-amber-100" : "bg-amber-600"
+        //(rIdx + cIdx) % 2 === 0 ? "bg-gray-200" : "bg-gray-600"
       );
       const pos = `${String.fromCharCode(97 + cIdx)}${8 - rIdx}`;
 
+      // Highlight last move
       if (lastMove && (lastMove.from === pos || lastMove.to === pos)) {
-        squareEl.classList.add("transition", "duration-300", "bg-lime-300");
+        squareEl.classList.add("bg-lime-300");
+      }
+
+      // Highlight clicked square
+      if (clickSource === pos) {
+        squareEl.classList.add("bg-lime-300");
       }
 
       if (square) {
@@ -125,10 +139,12 @@ const renderBoard = () => {
         if (!clickSource) {
           if (square && square.color === playerRole) {
             clickSource = pos;
+            renderBoard(); // 🔥 Re-render to show highlight
           }
         } else {
           attemptMove(clickSource, pos);
           clickSource = null;
+          renderBoard(); // 🔥 Optional: force refresh after move
         }
       });
 
