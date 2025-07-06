@@ -1,3 +1,4 @@
 .env
 package-lock.json
 public/fonts
+node_modules
