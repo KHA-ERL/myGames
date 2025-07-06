@@ -16,7 +16,7 @@ Multi board color option.
 
 chess video
 
-new chess features
+new chess features (notification when time runs our or a player wins instead of alert)
 
 code mini mail extraction tool with default ip
 

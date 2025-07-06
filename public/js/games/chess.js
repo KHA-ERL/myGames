@@ -93,7 +93,7 @@ const renderBoard = () => {
       const pos = `${String.fromCharCode(97 + cIdx)}${8 - rIdx}`;
 
       if (lastMove && (lastMove.from === pos || lastMove.to === pos)) {
-        squareEl.classList.add("highlight-yellow");
+        squareEl.classList.add("transition", "duration-300", "bg-lime-300");
       }
 
       if (square) {
