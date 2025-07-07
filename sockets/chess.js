@@ -92,7 +92,7 @@ module.exports = (io) => {
 
       const result = game.chess.move(move);
       if (result) {
-        // Clear the first-move timeout if it exists
+        // Clear any pending timeout
         if (game.timeout) {
           clearTimeout(game.timeout);
           delete game.timeout;
@@ -101,9 +101,11 @@ module.exports = (io) => {
         // Switch turn
         game.currentTurn = game.currentTurn === "w" ? "b" : "w";
 
-        // If opponent hasn't moved yet, set another 10s timeout
+        // Determine if we should still set a timeout
         const moveCount = game.chess.history().length;
-        if (moveCount === 1 || moveCount === 2) {
+
+        if (moveCount < 2) {
+          // Only set timeout if both players haven't moved yet
           game.timeout = setTimeout(() => {
             io.to(room).emit("gameAborted", {
               reason: `No move made by ${
@@ -119,7 +121,6 @@ module.exports = (io) => {
           }, 10000);
         }
 
-        // Broadcast update
         io.to(room).emit("move", move);
         io.to(room).emit("boardState", game.chess.fen());
         io.to(room).emit("clockUpdate", game.timeLeft);
