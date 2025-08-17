@@ -6,7 +6,8 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "build:css": "tailwindcss -i ./public/css/style.css -o ./public/css/output.css --minify",
-    "dev:css": "tailwindcss -i ./public/css/style.css -o ./public/css/output.css --watch"
+    "dev:css": "tailwindcss -i ./public/css/style.css -o ./public/css/output.css --watch",
+    "start": "nodemon app.js"
   },
   "keywords": [],
   "author": "Michael Paul",
