@@ -3,3 +3,4 @@ package-lock.json
 public/fonts
 node_modules
 todo.txt
+.DS_Store

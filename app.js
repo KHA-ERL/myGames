@@ -2,7 +2,7 @@ const express = require("express");
 const { Server } = require("socket.io");
 const http = require("http");
 const path = require("path");
-const authRoutes = require("./routes/authRoutes")
+//const authRoutes = require("./routes/authRoutes")
 
 const app = express();
 const server = http.createServer(app);
@@ -15,7 +15,7 @@ app.use(express.static(path.join(__dirname, "public")));
 // Routes
 app.use("/", require("./routes/index"));
 app.use("/game", require("./routes/games"));
-app.use("/user",authRoutes)
+//app.use("/user",authRoutes)
 
 // Sockets
 require("./sockets")(io);
