@@ -71,6 +71,7 @@ npm install
 | `npm run build:css` | Builds and minifies Tailwind CSS |
 | `npm run dev:css`   | Watches Tailwind changes         |
 | `npm start`         | Starts backend server            |
+| `npm dev`           | Uses nodemon backend server      |
 
 
 📜 License
