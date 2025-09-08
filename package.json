@@ -27,5 +27,8 @@
     "passport-jwt": "^4.0.1",
     "socket.io": "^4.8.1",
     "tailwindcss": "^4.1.11"
+  },
+  "engines": {
+    "node": "20.x"
   }
 }
