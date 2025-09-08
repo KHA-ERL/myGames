@@ -1,26 +1,32 @@
+// app.js
 const express = require("express");
-const { Server } = require("socket.io");
-const http = require("http");
 const path = require("path");
-//const authRoutes = require("./routes/authRoutes")
 
 const app = express();
-const server = http.createServer(app);
-const io = new Server(server, { cors: { origin: "*", methods: ["GET", "POST"] } });
 
-// View & Static
+// --- Views & Static ---
+app.set("views", path.join(__dirname, "views"));   // <- explicitly point to /views
 app.set("view engine", "ejs");
-app.use(express.static(path.join(__dirname, "public")));
+app.use("/public", express.static(path.join(__dirname, "public")));
 
-// Routes
+// --- Routes ---
 app.use("/", require("./routes/index"));
 app.use("/game", require("./routes/games"));
-//app.use("/user",authRoutes)
 
-// Sockets
-require("./sockets")(io);
+// --- Socket.IO (disabled on Vercel; see note below) ---
+if (!process.env.VERCEL) {
+  // Only run Socket.IO locally or on a host that supports WebSockets
+  const http = require("http");
+  const server = http.createServer(app);
+  const { Server } = require("socket.io");
+  const io = new Server(server, { cors: { origin: "*", methods: ["GET", "POST"] } });
+  require("./sockets")(io);
 
-const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => {
-  console.log(`Server running on http://localhost:${PORT}`);
-});
+  const PORT = process.env.PORT || 3000;
+  server.listen(PORT, () => {
+    console.log(`Server running on http://localhost:${PORT}`);
+  });
+}
+
+// Export the Express app so Vercel can use it as a request handler
+module.exports = app;
