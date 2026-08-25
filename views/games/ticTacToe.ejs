@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title><%= title %></title>
+    <link href="/public/css/output.css" rel="stylesheet" />
+  </head>
+  <body
+    class="bg-gray-900 text-white flex flex-col items-center justify-center min-h-screen space-y-4"
+  >
+    <h1 class="text-3xl font-bold"><%= title %></h1>
+
+    <div id="status" class="text-yellow-500">Choose play</div>
+
+    <button id="joinGame" class="bg-blue-600 px-4 py-2 rounded-md">
+      Find Match
+    </button>
+
+    <div id="readyPanel" class="text-center space-y-3 hidden">
+      <div id="readyStatus" class="text-yellow-500">Match found</div>
+      <button id="readyButton" class="bg-green-600 px-4 py-2 rounded-md">
+        Ready
+      </button>
+    </div>
+
+    <div
+      id="board"
+      class="grid grid-cols-3 gap-2 w-72 h-72"
+      aria-label="Tic-Tac-Toe board"
+    ></div>
+
+    <script
+      src="https://cdn.socket.io/4.8.1/socket.io.min.js"
+      integrity="sha384-mkQ3/7FUtcGyoppY6bz/PORYoGqOl7/aSUMn2ymDOJcapfS6PHqxhRTMh1RR0Q6+"
+      crossorigin="anonymous"
+    ></script>
+    <script>
+      window.PLAY_SOCKET_URL = <%- JSON.stringify(socketUrl || "") %>;
+      window.PLAY_PLAYER_ID = <%- JSON.stringify(playerId || "") %>;
+      window.PLAY_PLAYER_TOKEN = <%- JSON.stringify(playerToken || "") %>;
+    </script>
+    <script src="/public/js/games/ticTacToe.js"></script>
+  </body>
+</html>

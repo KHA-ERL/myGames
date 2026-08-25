@@ -12,11 +12,15 @@ const express = require("express");
 const router = express.Router();
 
 router.get("/", (req, res) => {
-  res.render("index", { title: "$Play - Home" });
+  res.render("index", { title: "$Play - Home", user: req.user || null });
 });
 
 router.get("/chess", (req, res) => {
   res.render("games/chess", { title: "Play Chess" });
+});
+
+router.get("/tic-tac-toe", (req, res) => {
+  res.render("games/ticTacToe", { title: "Play Tic-Tac-Toe" });
 });
 
 module.exports = router;

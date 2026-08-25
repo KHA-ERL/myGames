@@ -1,4 +1,6 @@
-const socket = io();
+const socket = io(window.PLAY_SOCKET_URL || undefined, {
+  auth: { playerToken: window.PLAY_PLAYER_TOKEN },
+});
 const chess = new Chess();
 const boardElement = document.querySelector(".chessboard");
 
@@ -6,12 +8,26 @@ let playerRole = null;
 let currentTurn = "w";
 let timeLeft = { w: 0, b: 0 };
 let myRoom = null;
-let lastMove = null;
+let myMatchId = null;
 let whiteId = null;
 let blackId = null;
 let sourceSquare = null;
 let clickSource = null;
 let waitingTimeout = null;
+let gameEnded = false;
+let gameStarted = false;
+let lastRenderedFen = null;
+
+const renderBoardIfChanged = () => {
+  if (chess.fen() === lastRenderedFen) return;
+  renderBoard();
+};
+
+const loadFen = (fen) => {
+  if (!fen || fen === chess.fen()) return false;
+  chess.load(fen);
+  return true;
+};
 
 // Unicode for chess pieces
 const getPieceUnicode = (piece) => {
@@ -46,39 +62,6 @@ const updateClocks = () => {
   document.getElementById("blackClock").textContent = formatTime(timeLeft.b);
 };
 
-const stopClocks = () => {
-  clearInterval(whiteTimer);
-  clearInterval(blackTimer);
-};
-
-function startClock(color) {
-  stopClocks(); // Stop any existing timer
-
-  if (color === "w") {
-    whiteTimer = setInterval(() => {
-      timeLeftW--;
-      updateClocks();
-      if (timeLeftW <= 0) {
-        stopClocks();
-        socket.emit("gameOver", {
-          reason: "White ran out of time, Black wins",
-        });
-      }
-    }, 1000);
-  } else {
-    blackTimer = setInterval(() => {
-      timeLeftB--;
-      updateClocks();
-      if (timeLeftB <= 0) {
-        stopClocks();
-        socket.emit("gameOver", {
-          reason: "Black ran out of time, White wins",
-        });
-      }
-    }, 1000);
-  }
-}
-
 const renderBoard = () => {
   const board = chess.board();
   boardElement.innerHTML = "";
@@ -100,12 +83,6 @@ const renderBoard = () => {
       );
       const pos = `${String.fromCharCode(97 + cIdx)}${8 - rIdx}`;
 
-      // Highlight last move
-      if (lastMove && (lastMove.from === pos || lastMove.to === pos)) {
-        squareEl.classList.add("bg-lime-300");
-      }
-
-      // Highlight clicked square
       if (clickSource === pos) {
         squareEl.classList.add("bg-lime-300");
       }
@@ -117,7 +94,7 @@ const renderBoard = () => {
           square.color === "w" ? "white" : "black"
         );
         pieceEl.textContent = getPieceUnicode(square);
-        pieceEl.draggable = playerRole === square.color;
+        pieceEl.draggable = gameStarted && playerRole === square.color;
 
         pieceEl.addEventListener("dragstart", (e) => {
           if (!pieceEl.draggable) return;
@@ -139,12 +116,13 @@ const renderBoard = () => {
         if (!clickSource) {
           if (square && square.color === playerRole) {
             clickSource = pos;
-            renderBoard(); // 🔥 Re-render to show highlight
+            renderBoard();
           }
         } else {
-          attemptMove(clickSource, pos);
+          const from = clickSource;
           clickSource = null;
-          renderBoard(); // 🔥 Optional: force refresh after move
+          renderBoard();
+          attemptMove(from, pos);
         }
       });
 
@@ -153,19 +131,21 @@ const renderBoard = () => {
   });
 
   boardElement.classList.toggle("flipped", playerRole === "b");
+  lastRenderedFen = chess.fen();
 };
 
 const attemptMove = (from, to) => {
-  const move = { from, to, promotion: "q" };
-  const result = chess.move(move);
-  if (result) {
-    lastMove = { from, to };
-    renderBoard();
-    currentTurn = currentTurn === "w" ? "b" : "w";
-    socket.emit("move", { move, room: myRoom });
-  } else {
-    console.log("Invalid move");
-  }
+  if (!gameStarted || !myMatchId) return;
+
+  socket.emit("game:action", {
+    matchId: myMatchId,
+    action: {
+      type: "MOVE",
+      from,
+      to,
+      promotion: "q",
+    },
+  });
 };
 
 // Time select buttons (trigger matchmaking)
@@ -174,13 +154,42 @@ document.querySelectorAll(".select-time").forEach((btn) => {
     const selectedTime = parseInt(btn.dataset.time);
     document.getElementById("waiting")?.classList.remove("hidden");
     document.getElementById("timerModal")?.remove(); // Hide modal
-    socket.emit("chess:selectTime", { time: selectedTime });
+    socket.emit("matchmaking:join", {
+      gameType: "chess",
+      timeControl: selectedTime,
+    });
   });
+});
+
+socket.on("matchmaking:matched", ({ matchId, room, status }) => {
+  myMatchId = matchId;
+  myRoom = room;
+  localStorage.setItem("chess-match", matchId);
+  localStorage.setItem("chess-room", room);
+  document.getElementById("waiting")?.classList.add("hidden");
+  gameStarted = status === "playing";
+  document
+    .getElementById("readyPanel")
+    ?.classList.toggle("hidden", gameStarted);
+  renderBoard();
+});
+
+document.getElementById("readyButton")?.addEventListener("click", () => {
+  if (!myMatchId) return;
+  socket.emit("game:ready", { matchId: myMatchId });
+  document.getElementById("readyButton").disabled = true;
+  document.getElementById("readyStatus").textContent = "Waiting for opponent";
+});
+
+socket.on("game:ready-status", ({ players }) => {
+  const readyCount = players.filter((player) => player.ready).length;
+  const readyStatus = document.getElementById("readyStatus");
+  if (readyStatus) readyStatus.textContent = `${readyCount}/2 ready`;
 });
 
 // Player assignment
 socket.on("playerRole", ({ white, black }) => {
-  const myId = socket.id;
+  const myId = window.PLAY_PLAYER_ID;
   playerRole = myId === white ? "w" : "b";
   localStorage.setItem("chess-role", playerRole);
 
@@ -197,28 +206,37 @@ socket.on("playerRole", ({ white, black }) => {
 });
 
 // Game start clock and assign room
-socket.on("chess:startClock", ({ time, room }) => {
+socket.on("chess:startClock", ({ time, room, matchId }) => {
   myRoom = room;
+  myMatchId = matchId || myMatchId;
+  if (myMatchId) localStorage.setItem("chess-match", myMatchId);
   localStorage.setItem("chess-room", room);
-  timeLeftW = time;
-  timeLeftB = time;
+  timeLeft = { w: time, b: time };
   updateClocks();
   // Initial render
+  renderBoardIfChanged();
+});
+
+socket.on("game:start", () => {
+  gameStarted = true;
+  document.getElementById("readyPanel")?.classList.add("hidden");
   renderBoard();
 });
 
 // Sync moves / Receive FEN
 socket.on("boardState", (fen) => {
-  chess.load(fen);
-  renderBoard();
+  if (loadFen(fen)) renderBoard();
 });
 
 // Move sync
-socket.on("move", (move) => {
-  chess.move(move);
-  lastMove = { from: move.from, to: move.to };
-  currentTurn = currentTurn === "w" ? "b" : "w";
-  renderBoard();
+socket.on("move", () => {});
+
+socket.on("game:state", ({ fen, timeLeft: serverTimeLeft, currentTurn: turn }) => {
+  const boardChanged = loadFen(fen);
+  if (serverTimeLeft) timeLeft = serverTimeLeft;
+  if (turn) currentTurn = turn;
+  updateClocks();
+  if (boardChanged) renderBoard();
 });
 
 // Show waiting UI
@@ -231,11 +249,26 @@ socket.on("chess:waiting", () => {
   }, 120000); // 120 seconds
 });
 
+socket.on("matchmaking:waiting", () => {
+  document.getElementById("waiting")?.classList.remove("hidden");
+});
+
 // Game aborted (disconnect or timeout)
-socket.on("gameAborted", ({ reason }) => {
+const handleGameEnded = (reason) => {
+  if (gameEnded) return;
+  gameEnded = true;
   alert(`Game ended: ${reason}`);
+  localStorage.removeItem("chess-match");
   localStorage.removeItem("chess-room");
   window.location.href = "/";
+};
+
+socket.on("gameAborted", ({ reason }) => {
+  handleGameEnded(reason);
+});
+
+socket.on("game:finished", ({ reason }) => {
+  handleGameEnded(reason);
 });
 
 // Clock updates every second
@@ -247,7 +280,5 @@ socket.on("clockUpdate", (newTimes) => {
 // Restore game if room exists
 window.addEventListener("load", () => {
   const savedRoom = localStorage.getItem("chess-room");
-  if (savedRoom) {
-    socket.emit("reconnectGame", { room: savedRoom });
-  }
+  socket.emit("reconnectGame", { room: savedRoom || undefined });
 });

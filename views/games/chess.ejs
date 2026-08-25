@@ -31,6 +31,13 @@
       Waiting for opponent...
     </div>
 
+    <div id="readyPanel" class="text-center space-y-3 hidden">
+      <div id="readyStatus" class="text-yellow-500">Match found</div>
+      <button id="readyButton" class="bg-green-600 px-4 py-2 rounded-md">
+        Ready
+      </button>
+    </div>
+
     <!-- Time Selection Modal -->
     <div
       id="timerModal"
@@ -74,6 +81,11 @@
       crossorigin="anonymous"
       referrerpolicy="no-referrer"
     ></script>
+    <script>
+      window.PLAY_SOCKET_URL = <%- JSON.stringify(socketUrl || "") %>;
+      window.PLAY_PLAYER_ID = <%- JSON.stringify(playerId || "") %>;
+      window.PLAY_PLAYER_TOKEN = <%- JSON.stringify(playerToken || "") %>;
+    </script>
     <script src="/public/js/games/chess.js"></script>
   </body>
 </html>
