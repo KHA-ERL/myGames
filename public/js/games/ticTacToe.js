@@ -12,6 +12,7 @@ let matchId = null;
 let mySide = null;
 let gameStarted = false;
 let lastBoard = Array(9).fill(null);
+let canPlayAgain = false;
 
 function renderBoard(board = lastBoard, winningLine = []) {
   lastBoard = board;
@@ -41,6 +42,11 @@ document.getElementById("joinGame")?.addEventListener("click", () => {
 });
 
 readyButton?.addEventListener("click", () => {
+  if (canPlayAgain) {
+    window.location.href = "/game/tic-tac-toe";
+    return;
+  }
+
   if (!matchId) return;
   socket.emit("game:ready", { matchId });
   readyButton.disabled = true;
@@ -85,6 +91,11 @@ socket.on("game:state", ({ board, currentTurn, winner, winningLine }) => {
 socket.on("game:finished", ({ reason }) => {
   gameStarted = false;
   statusElement.textContent = reason || "Game finished";
+  readyPanel.classList.remove("hidden");
+  readyStatus.textContent = reason || "Game finished";
+  readyButton.disabled = false;
+  readyButton.textContent = "Play Again";
+  canPlayAgain = true;
   renderBoard();
 });
 

@@ -8,6 +8,7 @@ const { Server } = require("socket.io");
 const { httpIdentity } = require("./sockets/core/identity");
 const createSessionMiddleware = require("./config/session");
 const configurePassport = require("./config/passport");
+const { connectToMongoDb } = require("./utils/mongodb/database");
 
 const app = express();
 const sessionMiddleware = createSessionMiddleware();
@@ -55,6 +56,11 @@ function startServer() {
 // Persistent Node hosts run this file directly and get Express + Socket.IO.
 // Serverless adapters can import the Express app without starting a socket server.
 if (require.main === module) {
+  connectToMongoDb(process.env.MONGO_URL || process.env.MONGODB_URI).catch(
+    (error) => {
+      console.error("MongoDB connection failed:", error.message);
+    }
+  );
   startServer();
 }
 

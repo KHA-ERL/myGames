@@ -10,17 +10,74 @@
   <link href="/public/css/output.css" rel="stylesheet">
 </head>
 
-<body class="bg-gray-900 text-white flex flex-col items-center justify-center min-h-screen space-y-4">
-  <% if (user) { %>
-    <div>Signed in as <%= user.displayName %></div>
-    <form method="post" action="/auth/logout">
-      <button class="bg-gray-700 px-4 py-2 rounded-md" type="submit">Sign out</button>
-    </form>
-  <% } else { %>
-    <a class="bg-blue-600 px-4 py-2 rounded-md" href="/auth/google">Sign in with Google</a>
-    <a class="bg-black border border-white px-4 py-2 rounded-md" href="/auth/apple">Sign in with Apple</a>
-  <% } %>
-  <a href="game/chess">Play Chess</a>
-  <a href="game/tic-tac-toe">Play Tic-Tac-Toe</a>
+<body class="bg-gray-900 text-white min-h-screen">
+  <main class="w-full max-w-5xl mx-auto px-4 py-6 space-y-6">
+    <section class="flex items-center justify-between gap-4 border-b border-gray-700 pb-4">
+      <div class="flex items-center gap-3 min-w-0">
+        <% if (user && user.avatar) { %>
+          <img class="w-12 h-12 rounded-full" src="<%= user.avatar %>" alt="">
+        <% } else { %>
+          <div class="w-12 h-12 rounded-full bg-blue-600 flex items-center justify-center text-xl font-bold">
+            <%= (user?.displayName || "G").charAt(0).toUpperCase() %>
+          </div>
+        <% } %>
+        <div class="min-w-0">
+          <h1 class="text-2xl font-bold truncate">
+            <%= user?.displayName || "Guest Player" %> — <%= user?.ratings?.chess || 1200 %>
+          </h1>
+          <div class="flex items-center gap-2 text-sm text-green-400">
+            <span class="w-2 h-2 rounded-full bg-green-400"></span>
+            Online
+          </div>
+        </div>
+      </div>
+
+      <% if (user) { %>
+        <form method="post" action="/auth/logout">
+          <button class="bg-gray-700 px-4 py-2 rounded-md" type="submit">Sign out</button>
+        </form>
+      <% } else { %>
+        <div class="flex flex-wrap gap-2 justify-end">
+          <a class="bg-blue-600 px-4 py-2 rounded-md" href="/auth/google">Sign in with Google</a>
+          <a class="bg-black border border-white px-4 py-2 rounded-md" href="/auth/apple">Sign in with Apple</a>
+        </div>
+      <% } %>
+    </section>
+
+    <section class="grid grid-cols-2 gap-3 text-center">
+      <div class="bg-gray-800 border border-gray-700 rounded-md p-4">
+        <div class="text-3xl font-bold"><%= playerSummary.wins %></div>
+        <div class="text-sm text-gray-400">Wins</div>
+      </div>
+      <div class="bg-gray-800 border border-gray-700 rounded-md p-4">
+        <div class="text-3xl font-bold"><%= playerSummary.losses %></div>
+        <div class="text-sm text-gray-400">Losses</div>
+      </div>
+    </section>
+
+    <section class="grid sm:grid-cols-2 gap-3">
+      <a class="bg-blue-600 px-4 py-4 rounded-md text-center font-semibold" href="game/chess">Play Chess</a>
+      <a class="bg-gray-800 border border-gray-700 px-4 py-4 rounded-md text-center font-semibold" href="game/tic-tac-toe">Play Tic-Tac-Toe</a>
+    </section>
+
+    <section class="space-y-3">
+      <h2 class="text-xl font-semibold">Recent Matches</h2>
+      <% if (playerSummary.recentMatches.length === 0) { %>
+        <div class="text-gray-400 border border-gray-700 rounded-md p-4">No matches yet.</div>
+      <% } else { %>
+        <div class="space-y-2">
+          <% playerSummary.recentMatches.forEach((match) => { %>
+            <div class="flex items-center justify-between gap-3 bg-gray-800 border border-gray-700 rounded-md p-3">
+              <div>
+                <div class="font-semibold"><%= match.game %></div>
+                <div class="text-sm text-gray-400"><%= new Date(match.finishedAt).toLocaleString() %></div>
+              </div>
+              <div class="capitalize font-bold"><%= match.outcome %></div>
+            </div>
+          <% }) %>
+        </div>
+      <% } %>
+    </section>
+  </main>
 </body>
 </html>

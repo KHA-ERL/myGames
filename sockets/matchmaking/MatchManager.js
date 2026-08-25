@@ -19,6 +19,7 @@ class MatchManager {
         playerId: player.playerId,
         socketId: player.socketId,
         side: player.side || null,
+        rating: player.rating || null,
         connected: true,
         ready: false,
       })),
@@ -27,6 +28,7 @@ class MatchManager {
       metadata,
       state,
       createdAt: Date.now(),
+      startedAt: null,
     };
 
     this.store.matches.set(id, match);

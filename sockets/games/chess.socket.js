@@ -238,7 +238,7 @@ module.exports = {
     return {
       players: playersWithSides,
       settings: { timeControl, wager: 0 },
-      metadata: { timeControl },
+      metadata: { timeControl, ratingsEnabled: true },
       state: {
         chess: null,
         clock: createClock(timeControl),
@@ -278,7 +278,12 @@ module.exports = {
 
   registerSocket(service, socket) {
     socket.on("chess:selectTime", ({ time }) => {
-      service.join(socket, { gameType: "chess", timeControl: time });
+      service.join(socket, { gameType: "chess", timeControl: time }).catch(() => {
+        socket.emit("matchmaking:error", {
+          code: "join_failed",
+          message: "Could not join matchmaking.",
+        });
+      });
     });
 
     socket.on("move", ({ move, room, matchId }) => {

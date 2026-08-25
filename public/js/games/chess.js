@@ -17,6 +17,7 @@ let waitingTimeout = null;
 let gameEnded = false;
 let gameStarted = false;
 let lastRenderedFen = null;
+let canPlayAgain = false;
 
 const renderBoardIfChanged = () => {
   if (chess.fen() === lastRenderedFen) return;
@@ -60,6 +61,19 @@ const formatTime = (sec) => {
 const updateClocks = () => {
   document.getElementById("whiteClock").textContent = formatTime(timeLeft.w);
   document.getElementById("blackClock").textContent = formatTime(timeLeft.b);
+};
+
+const showGameOverActions = (reason) => {
+  const panel = document.getElementById("readyPanel");
+  const status = document.getElementById("readyStatus");
+  const button = document.getElementById("readyButton");
+  if (!panel || !status || !button) return;
+
+  panel.classList.remove("hidden");
+  status.textContent = reason || "Game finished";
+  button.disabled = false;
+  button.textContent = "Play Again";
+  canPlayAgain = true;
 };
 
 const renderBoard = () => {
@@ -175,6 +189,11 @@ socket.on("matchmaking:matched", ({ matchId, room, status }) => {
 });
 
 document.getElementById("readyButton")?.addEventListener("click", () => {
+  if (canPlayAgain) {
+    window.location.href = "/game/chess";
+    return;
+  }
+
   if (!myMatchId) return;
   socket.emit("game:ready", { matchId: myMatchId });
   document.getElementById("readyButton").disabled = true;
@@ -257,10 +276,10 @@ socket.on("matchmaking:waiting", () => {
 const handleGameEnded = (reason) => {
   if (gameEnded) return;
   gameEnded = true;
-  alert(`Game ended: ${reason}`);
+  gameStarted = false;
   localStorage.removeItem("chess-match");
   localStorage.removeItem("chess-room");
-  window.location.href = "/";
+  showGameOverActions(reason);
 };
 
 socket.on("gameAborted", ({ reason }) => {

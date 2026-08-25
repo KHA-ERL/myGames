@@ -21,9 +21,46 @@ const MatchPlayerSchema = new mongoose.Schema(
 
 const MatchSchema = new mongoose.Schema(
   {
+    matchId: {
+      type: String,
+      required: true,
+      unique: true,
+    },
     game: {
       type: String,
       required: true,
+    },
+    playerA: {
+      type: String,
+      required: true,
+    },
+    playerB: {
+      type: String,
+      required: true,
+    },
+    winner: {
+      type: String,
+      default: null,
+    },
+    loser: {
+      type: String,
+      default: null,
+    },
+    resultReason: {
+      type: String,
+      default: null,
+    },
+    timeControl: {
+      type: Number,
+      default: 0,
+    },
+    durationMs: {
+      type: Number,
+      default: 0,
+    },
+    date: {
+      type: Date,
+      default: Date.now,
     },
     players: {
       type: [MatchPlayerSchema],
@@ -41,6 +78,14 @@ const MatchSchema = new mongoose.Schema(
       required: true,
     },
     result: {
+      type: mongoose.Schema.Types.Mixed,
+      default: null,
+    },
+    ratings: {
+      type: mongoose.Schema.Types.Mixed,
+      default: {},
+    },
+    ratingChanges: {
       type: mongoose.Schema.Types.Mixed,
       default: null,
     },

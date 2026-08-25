@@ -33,6 +33,12 @@ const UserSchema = new mongoose.Schema(
       type: [AuthIdentitySchema],
       default: [],
     },
+    ratings: {
+      chess: {
+        type: Number,
+        default: 1200,
+      },
+    },
   },
   { timestamps: true }
 );

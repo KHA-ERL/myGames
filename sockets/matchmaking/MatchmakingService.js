@@ -6,6 +6,9 @@ const { validateGameAdapter } = require("../games/gameAdapter");
 const ReconnectService = require("../services/reconnect.service");
 const WagerService = require("../services/wager.service");
 const matchRepository = require("../../services/matches/matchRepository");
+const userRepository = require("../../services/auth/userRepository");
+const { DEFAULT_RATING } = require("../../services/ratings/eloService");
+const { getRatingWindow } = require("../../services/ratings/ratingWindow");
 
 const DEFAULT_READY_TIMEOUT_MS = 30000;
 
@@ -30,7 +33,13 @@ class MatchmakingService {
     const playerId = socket.data.player.playerId;
 
     socket.on("matchmaking:join", (payload) => {
-      this.join(socket, payload);
+      this.join(socket, payload).catch((error) => {
+        console.error("Matchmaking join failed:", error);
+        socket.emit("matchmaking:error", {
+          code: "join_failed",
+          message: "Could not join matchmaking.",
+        });
+      });
     });
 
     socket.on("matchmaking:cancel", () => {
@@ -50,6 +59,7 @@ class MatchmakingService {
       const allReady = match.players.every((matchPlayer) => matchPlayer.ready);
       if (allReady && match.status === MATCH_STATUS.WAITING_READY) {
         match.status = MATCH_STATUS.PLAYING;
+        match.startedAt = Date.now();
         if (match.readyTimeout) {
           clearTimeout(match.readyTimeout);
           delete match.readyTimeout;
@@ -77,7 +87,7 @@ class MatchmakingService {
     }
   }
 
-  join(socket, payload) {
+  async join(socket, payload) {
     const adapter = this.games.get(payload?.gameType);
     if (!adapter) return;
     const playerId = socket.data.player?.playerId;
@@ -91,10 +101,12 @@ class MatchmakingService {
       return;
     }
 
+    const user = await userRepository.findById(playerId);
     const player = {
       playerId,
       socketId: socket.id,
       connected: true,
+      rating: user?.ratings?.[adapter.gameType] || DEFAULT_RATING,
     };
     const params = adapter.getMatchmakingParams
       ? adapter.getMatchmakingParams(payload)
@@ -115,6 +127,7 @@ class MatchmakingService {
     params.wager = wagerValidation.wager;
 
     const queueKey = this.queueManager.getQueueKey(params);
+    params.ratingWindow = getRatingWindow(0);
 
     const result = this.queueManager.join({
       queueKey,
@@ -128,8 +141,9 @@ class MatchmakingService {
       socket.emit("matchmaking:waiting", {
         gameType: adapter.gameType,
         queueKey,
-        params,
-      });
+      params,
+      player,
+    });
       adapter.onWaiting?.(socket, payload);
       return;
     }
