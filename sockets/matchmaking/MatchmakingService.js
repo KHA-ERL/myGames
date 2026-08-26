@@ -5,6 +5,7 @@ const InMemoryStore = require("./InMemoryStore");
 const { validateGameAdapter } = require("../games/gameAdapter");
 const ReconnectService = require("../services/reconnect.service");
 const WagerService = require("../services/wager.service");
+const RematchService = require("../services/rematch.service");
 const matchRepository = require("../../services/matches/matchRepository");
 const userRepository = require("../../services/auth/userRepository");
 const { DEFAULT_RATING } = require("../../services/ratings/eloService");
@@ -20,6 +21,7 @@ class MatchmakingService {
     this.matchManager = new MatchManager(this.store);
     this.reconnectService = new ReconnectService();
     this.wagerService = new WagerService();
+    this.rematchService = new RematchService();
     this.matchRepository = matchRepository;
     this.games = new Map();
   }
@@ -42,9 +44,15 @@ class MatchmakingService {
       });
     });
 
+    socket.on("lobby:subscribe", () => {
+      socket.join("lobby");
+      this.emitLobbyState();
+    });
+
     socket.on("matchmaking:cancel", () => {
       this.queueManager.cancel(playerId);
       socket.emit("matchmaking:cancelled");
+      this.emitLobbyState();
     });
 
     socket.on("game:ready", ({ matchId }) => {
@@ -68,6 +76,10 @@ class MatchmakingService {
         const adapter = this.games.get(match.game);
         adapter?.startMatch(this.io, match, this);
       }
+    });
+
+    socket.on("game:rematch-request", ({ matchId }) => {
+      this.requestRematch(socket, matchId);
     });
 
     socket.on("game:action", (payload) => {
@@ -145,6 +157,7 @@ class MatchmakingService {
       player,
     });
       adapter.onWaiting?.(socket, payload);
+      this.emitLobbyState();
       return;
     }
 
@@ -169,6 +182,7 @@ class MatchmakingService {
     this.io.to(match.room).emit("matchmaking:matched", this.getMatchPayload(match));
     adapter.onMatchCreated?.(this.io, match, this);
     this.startReadyTimeout(match);
+    this.emitLobbyState();
   }
 
   handleAction(socket, payload) {
@@ -216,6 +230,7 @@ class MatchmakingService {
   disconnect(socket) {
     const playerId = socket.data.player.playerId;
     this.queueManager.cancel(playerId);
+    this.emitLobbyState();
 
     const match = this.matchManager.findByPlayer(playerId);
     if (!match) return;
@@ -260,6 +275,7 @@ class MatchmakingService {
     }
 
     match.status = MATCH_STATUS.FINISHED;
+    this.rematchService.createOffer(match, result, reason);
     this.io.to(match.room).emit("game:finished", {
       matchId: match.id,
       room: match.room,
@@ -272,6 +288,85 @@ class MatchmakingService {
       console.error("Failed to record match result:", error);
     });
     this.matchManager.remove(match);
+    this.emitLobbyState();
+  }
+
+  requestRematch(socket, matchId) {
+    const playerId = socket.data.player.playerId;
+    const offer =
+      this.rematchService.request(matchId, playerId, socket.id) ||
+      this.rematchService.request(
+        this.rematchService.getByPlayer(playerId)?.originalMatchId,
+        playerId,
+        socket.id
+      );
+
+    if (!offer) {
+      socket.emit("game:rematch-error", {
+        code: "rematch_unavailable",
+        message: "Rematch is no longer available.",
+      });
+      return;
+    }
+
+    offer.players.forEach((player) => {
+      const playerSocket = this.io.sockets.sockets.get(player.socketId);
+      playerSocket?.emit("game:rematch-status", {
+        matchId: offer.originalMatchId,
+        requested: [...offer.requested],
+        needed: offer.players.map((entry) => entry.playerId),
+      });
+    });
+
+    if (!this.rematchService.isAccepted(offer)) return;
+
+    const adapter = this.games.get(offer.game);
+    if (!adapter) return;
+
+    const players = offer.players
+      .map((player) => ({
+        ...player,
+        connected: true,
+        ready: false,
+      }))
+      .filter((player) => this.io.sockets.sockets.get(player.socketId));
+
+    if (
+      players.length !== 2 ||
+      players.some((player) => this.matchManager.isPlayerInMatch(player.playerId))
+    ) {
+      return;
+    }
+
+    const setup = adapter.createRematch
+      ? adapter.createRematch(players, offer)
+      : adapter.createMatch(players, {
+          gameType: offer.game,
+          timeControl: offer.settings.timeControl,
+          wager: offer.settings.wager,
+        });
+    const match = this.matchManager.create({
+      game: adapter.gameType,
+      players: setup.players || players,
+      state: setup.state,
+      settings: setup.settings,
+      metadata: {
+        ...setup.metadata,
+        rematchOf: offer.originalMatchId,
+      },
+    });
+
+    adapter.createGame(match);
+    match.players.forEach((matchedPlayer) => {
+      const matchedSocket = this.io.sockets.sockets.get(matchedPlayer.socketId);
+      if (matchedSocket) matchedSocket.join(match.room);
+    });
+
+    this.rematchService.clearOffer(offer.originalMatchId);
+    this.io.to(match.room).emit("matchmaking:matched", this.getMatchPayload(match));
+    adapter.onMatchCreated?.(this.io, match, this);
+    this.startReadyTimeout(match);
+    this.emitLobbyState();
   }
 
   cancel(match, reason) {
@@ -292,6 +387,7 @@ class MatchmakingService {
 
     this.cleanupMatch(match);
     this.matchManager.remove(match);
+    this.emitLobbyState();
   }
 
   cleanupMatch(match) {
@@ -326,6 +422,36 @@ class MatchmakingService {
       status: match.status,
       metadata: match.metadata,
     };
+  }
+
+  getLobbySnapshot() {
+    const queueSnapshot = this.queueManager.getSnapshot();
+    const matchSnapshot = this.matchManager.getSnapshot();
+    const games = {};
+
+    for (const gameType of this.games.keys()) {
+      games[gameType] = {
+        queuedPlayers: 0,
+        activeMatches: matchSnapshot.games[gameType]?.activeMatches || 0,
+      };
+    }
+
+    for (const [queueKey, count] of Object.entries(queueSnapshot.queues)) {
+      const gameType = queueKey.split(":")[0];
+      games[gameType] = games[gameType] || { queuedPlayers: 0, activeMatches: 0 };
+      games[gameType].queuedPlayers += count;
+    }
+
+    return {
+      onlinePlayers: this.io.sockets.sockets.size,
+      queuedPlayers: queueSnapshot.queuedPlayers,
+      activeMatches: matchSnapshot.activeMatches,
+      games,
+    };
+  }
+
+  emitLobbyState() {
+    this.io.to("lobby").emit("lobby:state", this.getLobbySnapshot());
   }
 }
 

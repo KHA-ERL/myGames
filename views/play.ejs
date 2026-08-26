@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title><%= title %></title>
+  <link href="/public/css/output.css" rel="stylesheet">
+  <link href="/public/css/dashboard.css" rel="stylesheet">
+</head>
+<body class="dashboard">
+  <canvas class="dash-canvas" id="dashCanvas" aria-hidden="true"></canvas>
+  <main class="dash-shell dash-grid">
+    <section class="dash-topbar">
+      <div class="player-chip">
+        <% if (user && user.avatar) { %>
+          <img class="dash-avatar" src="<%= user.avatar %>" alt="">
+        <% } else { %>
+          <div class="dash-avatar"><%= (user?.displayName || "G").charAt(0).toUpperCase() %></div>
+        <% } %>
+        <div class="min-w-0">
+          <h1 class="dash-title truncate"><%= user?.displayName || "Guest Player" %></h1>
+          <div class="dash-subline">
+            <span class="status-online">Online</span>
+            <span>Chess <%= user?.ratings?.chess || 1200 %></span>
+            <span><%= playerSummary.wins %>W / <%= playerSummary.losses %>L</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="dash-actions">
+        <a class="dash-btn" href="/">Home</a>
+        <a class="dash-btn" href="/profile">Profile</a>
+        <a class="dash-btn" href="/leaderboards">Leaders</a>
+        <% if (user) { %>
+          <form method="post" action="/auth/logout">
+            <button class="dash-btn" type="submit">Sign out</button>
+          </form>
+        <% } else { %>
+          <a class="dash-btn dash-btn-blue" href="/auth/google">Sign in</a>
+        <% } %>
+      </div>
+    </section>
+
+    <section class="lobby-hero">
+      <div>
+        <div class="hero-eyebrow">Live head-to-head games</div>
+        <h2 class="hero-title">Your next rival is <em>already here.</em></h2>
+        <p class="hero-intro">Pick a game, choose your pace, and get paired with someone ready to play. Ratings, rematches, and match history keep every game connected.</p>
+        <div class="hero-tags">
+          <span class="pill pill-live">Chess live</span>
+          <span class="pill">Tic-Tac-Toe live</span>
+          <span class="pill">8-Ball soon</span>
+          <span class="pill">Checkers soon</span>
+        </div>
+        <div class="hero-queue">
+          <div class="hero-queue-top">
+            <div class="hero-queue-title">Chess <span><span id="heroChessQueue">0</span> queued</span></div>
+            <span class="hero-eyebrow">Choose pace</span>
+          </div>
+          <div class="pace-row">
+            <a class="pace-chip" href="/game/chess"><b>1 min</b><small>Blitz</small></a>
+            <a class="pace-chip" href="/game/chess"><b>5 min</b><small>Rapid</small></a>
+            <a class="pace-chip" href="/game/chess"><b>10 min</b><small>Classic</small></a>
+          </div>
+        </div>
+      </div>
+
+      <aside class="hero-board-panel">
+        <div class="hero-board-top">
+          <strong>Tonight's board</strong>
+          <span class="hero-badge">MATCH READY</span>
+        </div>
+        <div class="preview-board" id="previewBoard" aria-label="Chess board preview"></div>
+        <a class="dash-btn dash-btn-primary text-center" href="/game/chess">Find a chess match</a>
+        <p class="hero-note">Choose your time control on the board screen.</p>
+      </aside>
+    </section>
+
+    <section class="toolbar">
+      <input id="gameSearch" class="dash-input" type="search" placeholder="Search games">
+      <div class="filter-row" aria-label="Game filters">
+        <button class="lobby-filter dash-btn is-active" data-filter="all" type="button">All</button>
+        <button class="lobby-filter dash-btn" data-filter="board" type="button">Board</button>
+        <button class="lobby-filter dash-btn" data-filter="quick" type="button">Quick</button>
+        <button class="lobby-filter dash-btn" data-filter="arcade" type="button">Arcade</button>
+      </div>
+    </section>
+
+    <section class="metric-grid" aria-label="Lobby status">
+      <div class="metric-card">
+        <div id="lobbyOnline" class="metric-value">-</div>
+        <div class="metric-label">Active players</div>
+      </div>
+      <div class="metric-card">
+        <div id="lobbyQueued" class="metric-value">-</div>
+        <div class="metric-label">Queued</div>
+      </div>
+      <div class="metric-card">
+        <div id="lobbyMatches" class="metric-value">-</div>
+        <div class="metric-label">Live matches</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-value"><%= games.filter((game) => game.status === "live").length %></div>
+        <div class="metric-label">Playable games</div>
+      </div>
+    </section>
+
+    <section class="grid lg:grid-cols-2 gap-4">
+      <div class="dash-panel">
+        <div class="section-head">
+          <h2 class="section-title">Chess Leaderboard</h2>
+          <a class="dash-muted" href="/leaderboards">View all</a>
+        </div>
+        <% if (!leaderboard || leaderboard.length === 0) { %>
+          <div class="empty-state">No rated players yet.</div>
+        <% } else { %>
+          <div class="space-y-2">
+            <% leaderboard.forEach((player, index) => { %>
+              <div class="match-row">
+                <div class="font-semibold"><%= index + 1 %>. <%= player.displayName %></div>
+                <div><%= player.ratings?.chess || 1200 %></div>
+              </div>
+            <% }) %>
+          </div>
+        <% } %>
+      </div>
+
+      <div class="dash-panel">
+        <div class="section-head">
+          <h2 class="section-title">Friends</h2>
+        </div>
+        <% if (!user) { %>
+          <div class="empty-state">Sign in to add friends.</div>
+        <% } else { %>
+          <% if (friendMessage === "added") { %>
+            <div class="text-green-300 text-sm mb-3">Friend added.</div>
+          <% } else if (friendMessage) { %>
+            <div class="text-yellow-300 text-sm mb-3">Could not add that friend.</div>
+          <% } %>
+          <form class="flex gap-2 mb-3" method="post" action="/friends">
+            <input class="dash-input" name="identifier" placeholder="Email or display name">
+            <button class="dash-btn dash-btn-blue" type="submit">Add</button>
+          </form>
+        <% } %>
+        <% if (user && (!friends || friends.length === 0)) { %>
+          <div class="empty-state">No friends yet.</div>
+        <% } else if (user) { %>
+          <div class="space-y-2">
+            <% friends.forEach((friend) => { %>
+              <div class="match-row">
+                <div class="font-semibold"><%= friend.displayName %></div>
+                <div class="dash-muted">Chess <%= friend.ratings?.chess || 1200 %></div>
+              </div>
+            <% }) %>
+          </div>
+        <% } %>
+      </div>
+    </section>
+
+    <section class="game-grid" id="gameGrid">
+      <% games.forEach((game) => { %>
+        <article class="game-card" data-name="<%= game.name.toLowerCase() %>" data-category="<%= game.category %>" data-game-id="<%= game.id %>">
+          <div class="game-card-inner">
+            <div class="flex items-start justify-between gap-3">
+              <div>
+                <div class="card-kicker"><%= game.category %> / <%= game.modes.join(" / ") %></div>
+                <h2 class="text-2xl font-black"><%= game.name %></h2>
+              </div>
+              <span class="pill <%= game.status === 'live' ? 'pill-live' : '' %>"><%= game.status %></span>
+            </div>
+
+            <div class="mini-stats">
+              <div class="mini-stat">
+                <div class="game-queued font-black">0</div>
+                <div class="dash-muted text-xs">Queue</div>
+              </div>
+              <div class="mini-stat">
+                <div class="game-matches font-black">0</div>
+                <div class="dash-muted text-xs">Matches</div>
+              </div>
+              <div class="mini-stat">
+                <div class="font-black"><%= game.ratingKey ? (user?.ratings?.[game.ratingKey] || 1200) : "-" %></div>
+                <div class="dash-muted text-xs">Rating</div>
+              </div>
+            </div>
+
+            <div class="flex flex-wrap gap-2">
+              <% game.timeControls.forEach((control) => { %>
+                <span class="pill"><%= control.label %></span>
+              <% }) %>
+            </div>
+
+            <% if (game.status === "live") { %>
+              <a class="dash-btn dash-btn-primary text-center" href="<%= game.href %>">Play <%= game.name %></a>
+            <% } else { %>
+              <button class="dash-btn w-full opacity-50" type="button" disabled>Coming soon</button>
+            <% } %>
+          </div>
+        </article>
+      <% }) %>
+    </section>
+
+    <section class="dash-panel">
+      <div class="section-head">
+        <h2 class="section-title">Recent Matches</h2>
+      </div>
+      <% if (playerSummary.recentMatches.length === 0) { %>
+        <div class="empty-state">No matches yet.</div>
+      <% } else { %>
+        <div class="space-y-2">
+          <% playerSummary.recentMatches.forEach((match) => { %>
+            <div class="match-row">
+              <div>
+                <div class="font-semibold"><%= match.game %></div>
+                <div class="dash-muted text-sm"><%= new Date(match.finishedAt).toLocaleString() %></div>
+              </div>
+              <div class="capitalize font-black"><%= match.outcome %></div>
+            </div>
+          <% }) %>
+        </div>
+      <% } %>
+    </section>
+  </main>
+
+  <script>
+    window.PLAY_SOCKET_URL = <%- JSON.stringify(socketUrl || "") %>;
+  </script>
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="/public/js/lobby.js"></script>
+</body>
+</html>

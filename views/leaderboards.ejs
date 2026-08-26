@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title><%= title %></title>
+  <link href="/public/css/output.css" rel="stylesheet">
+  <link href="/public/css/dashboard.css" rel="stylesheet">
+</head>
+<body class="dashboard">
+  <main class="dash-shell dash-grid">
+    <section class="dash-topbar">
+      <div>
+        <h1 class="dash-title">Chess Leaderboard</h1>
+        <div class="dash-subline">
+          <span>Rated players</span>
+          <span><%= leaderboard.length %> listed</span>
+        </div>
+      </div>
+      <div class="dash-actions">
+        <a class="dash-btn dash-btn-primary" href="/play">Play</a>
+        <a class="dash-btn" href="/profile">Profile</a>
+      </div>
+    </section>
+
+    <section class="dash-panel">
+      <% if (leaderboard.length === 0) { %>
+        <div class="empty-state">No rated players yet.</div>
+      <% } else { %>
+        <div class="space-y-2">
+          <% leaderboard.forEach((player, index) => { %>
+            <div class="match-row">
+              <div class="flex items-center gap-3">
+                <div class="dash-avatar" style="width: 38px; height: 38px;"><%= index + 1 %></div>
+                <div class="font-semibold"><%= player.displayName %></div>
+              </div>
+              <div class="font-black"><%= player.ratings?.chess || 1200 %></div>
+            </div>
+          <% }) %>
+        </div>
+      <% } %>
+    </section>
+  </main>
+</body>
+</html>

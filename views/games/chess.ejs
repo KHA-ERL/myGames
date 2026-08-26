@@ -4,72 +4,83 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title><%= title %></title>
-
     <link href="/public/css/output.css" rel="stylesheet" />
+    <link href="/public/css/dashboard.css" rel="stylesheet" />
     <link
       rel="stylesheet"
       href="https://fontlibrary.org//face/chess"
       type="text/css"
     />
   </head>
-  <body
-    class="bg-gray-900 text-white flex flex-col items-center justify-center min-h-screen space-y-4"
-  >
-    <h1 class="text-3xl font-bold mb-4"><%= title %></h1>
+  <body class="game-page">
+    <main class="game-shell">
+      <nav class="game-nav">
+        <a class="flex items-center gap-2 font-black text-xl" href="/play">
+          <span class="brand-mark">$</span>
+          <span>Play</span>
+        </a>
+        <div class="dash-actions">
+          <a class="dash-btn" href="/play">Lobby</a>
+          <a class="dash-btn" href="/profile">Profile</a>
+        </div>
+      </nav>
 
-    <!-- Timer Display -->
-    <div class="flex justify-between w-full max-w-md text-center text-lg mb-2">
-      <div class="rounded-2xl text-amber-500 text-2xl w-max py-2 px-3"><span id="whiteClock" class="font-bold">00:00</span></div>
-      <div class="rounded-2xl text-amber-500 text-2xl w-max py-2 px-3"><span id="blackClock" class="font-bold">00:00</span></div>
-    </div>
+      <section class="game-stage">
+        <div class="board-panel">
+          <div class="flex items-center justify-between gap-3">
+            <div>
+              <div class="hero-eyebrow">Rated chess</div>
+              <h1 class="text-3xl md:text-5xl font-black tracking-tight"><%= title %></h1>
+            </div>
+            <span class="hero-badge">SERVER CLOCK</span>
+          </div>
 
-    <!-- Chessboard -->
-    <div class="chessboard shadow-lg rounded-md overflow-hidden mt-4"></div>
+          <div class="clock-row">
+            <div class="clock-card">
+              <div class="clock-label">White</div>
+              <div id="whiteClock" class="clock-value">00:00</div>
+            </div>
+            <div class="clock-card">
+              <div class="clock-label">Black</div>
+              <div id="blackClock" class="clock-value">00:00</div>
+            </div>
+          </div>
 
-    <!-- Waiting Indicator -->
-    <div id="waiting" class="text-yellow-500 mt-4 hidden">
-      Waiting for opponent...
-    </div>
+          <div class="chessboard shadow-lg overflow-hidden"></div>
+        </div>
 
-    <div id="readyPanel" class="text-center space-y-3 hidden">
-      <div id="readyStatus" class="text-yellow-500">Match found</div>
-      <button id="readyButton" class="bg-green-600 px-4 py-2 rounded-md">
-        Ready
-      </button>
-    </div>
+        <aside class="game-side-panel">
+          <div>
+            <div class="hero-eyebrow">Match flow</div>
+            <h2 class="text-2xl font-black">Find your next rival.</h2>
+            <p class="dash-muted mt-2">Choose a clock, ready up, and play from server-authoritative state.</p>
+          </div>
 
-    <!-- Time Selection Modal -->
-    <div
-      id="timerModal"
-      class="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50"
-    >
-      <div class="bg-gray-800 p-6 rounded-lg text-center space-y-4">
-        <h2 class="text-2xl mb-2 font-bold">Choose Game Time</h2>
-        <div class="space-x-4">
-          <button
-            class="select-time bg-blue-600 px-4 py-2 rounded-md"
-            data-time="60"
-          >
-            1 Min
-          </button>
-          <button
-            class="select-time bg-blue-600 px-4 py-2 rounded-md"
-            data-time="300"
-          >
-            5 Min
-          </button>
-          <button
-            class="select-time bg-blue-600 px-4 py-2 rounded-md"
-            data-time="600"
-          >
-            10 Min
-          </button>
+          <div id="waiting" class="game-status hidden">Waiting for opponent...</div>
+
+          <div id="readyPanel" class="game-status hidden">
+            <div id="readyStatus">Match found</div>
+            <div id="rematchStatus" class="dash-muted text-sm hidden"></div>
+            <button id="readyButton" class="game-action w-full mt-3">Ready</button>
+          </div>
+
+          <a class="dash-btn text-center" href="/play">Back to lobby</a>
+        </aside>
+      </section>
+    </main>
+
+    <div id="timerModal" class="choice-modal">
+      <div class="choice-card">
+        <div class="hero-eyebrow">Choose pace</div>
+        <h2 class="text-3xl font-black tracking-tight">Select a chess clock</h2>
+        <div class="choice-grid">
+          <button class="select-time" data-time="60">1 Min</button>
+          <button class="select-time" data-time="300">5 Min</button>
+          <button class="select-time" data-time="600">10 Min</button>
         </div>
       </div>
     </div>
 
-    <!-- Scripts -->
-    <!-- External Libraries -->
     <script
       src="https://cdn.socket.io/4.8.1/socket.io.min.js"
       integrity="sha384-mkQ3/7FUtcGyoppY6bz/PORYoGqOl7/aSUMn2ymDOJcapfS6PHqxhRTMh1RR0Q6+"

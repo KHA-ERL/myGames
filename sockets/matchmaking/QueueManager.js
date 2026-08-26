@@ -56,6 +56,18 @@ class QueueManager {
   getQueueKey({ game, timeControl = 0, wager = 0 }) {
     return `${game}:${timeControl}:${wager}`;
   }
+
+  getSnapshot() {
+    const queues = {};
+    let queuedPlayers = 0;
+
+    for (const [queueKey, queue] of this.store.queues.entries()) {
+      queues[queueKey] = queue.length;
+      queuedPlayers += queue.length;
+    }
+
+    return { queuedPlayers, queues };
+  }
 }
 
 module.exports = QueueManager;

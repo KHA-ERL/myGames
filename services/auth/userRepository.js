@@ -127,6 +127,99 @@ class UserRepository {
     return user;
   }
 
+  async getLeaderboard(game = "chess", limit = 10) {
+    const ratingPath = `ratings.${game}`;
+
+    if (mongoose.connection.readyState === 1) {
+      const users = await UserModel.find({ [ratingPath]: { $exists: true } })
+        .sort({ [ratingPath]: -1 })
+        .limit(limit)
+        .lean();
+
+      return users.map((user) => this.toPublicUser(user));
+    }
+
+    return [...this.users.values()]
+      .filter((user) => user.ratings?.[game])
+      .sort((a, b) => (b.ratings?.[game] || 0) - (a.ratings?.[game] || 0))
+      .slice(0, limit);
+  }
+
+  async findByHandle(identifier) {
+    const value = String(identifier || "").trim();
+    if (!value) return null;
+
+    if (mongoose.connection.readyState === 1) {
+      const user = await UserModel.findOne({
+        $or: [
+          { email: value.toLowerCase() },
+          { displayName: new RegExp(`^${this.escapeRegExp(value)}$`, "i") },
+        ],
+      }).lean();
+
+      return user ? this.toPublicUser(user) : null;
+    }
+
+    return (
+      [...this.users.values()].find(
+        (user) =>
+          user.email?.toLowerCase() === value.toLowerCase() ||
+          user.displayName?.toLowerCase() === value.toLowerCase()
+      ) || null
+    );
+  }
+
+  async addFriend(userId, friendId) {
+    if (!userId || !friendId || userId === friendId) return null;
+
+    const user = await this.findById(userId);
+    const friend = await this.findById(friendId);
+    if (!user || !friend) return null;
+
+    if (mongoose.connection.readyState === 1) {
+      await UserModel.updateOne(
+        { _id: userId },
+        {
+          $addToSet: {
+            friends: { userId: friendId, status: "accepted" },
+          },
+        }
+      );
+      await UserModel.updateOne(
+        { _id: friendId },
+        {
+          $addToSet: {
+            friends: { userId, status: "accepted" },
+          },
+        }
+      );
+
+      return this.findById(userId);
+    }
+
+    user.friends = user.friends || [];
+    friend.friends = friend.friends || [];
+    if (!user.friends.some((entry) => entry.userId === friendId)) {
+      user.friends.push({ userId: friendId, status: "accepted", createdAt: new Date() });
+    }
+    if (!friend.friends.some((entry) => entry.userId === userId)) {
+      friend.friends.push({ userId, status: "accepted", createdAt: new Date() });
+    }
+
+    return user;
+  }
+
+  async getFriends(userId) {
+    const user = await this.findById(userId);
+    if (!user?.friends?.length) return [];
+
+    const friends = await Promise.all(
+      user.friends.map((friend) => this.findById(friend.userId))
+    );
+
+    return friends.filter(Boolean);
+  }
+
   getIdentityKey(provider, providerUserId) {
     return `${provider}:${providerUserId}`;
   }
@@ -142,8 +235,13 @@ class UserRepository {
       providerUserId: primaryIdentity.providerUserId,
       identities: user.identities || [],
       ratings: user.ratings || { chess: DEFAULT_RATING },
+      friends: user.friends || [],
       createdAt: user.createdAt,
     };
+  }
+
+  escapeRegExp(value) {
+    return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   }
 }
 

@@ -67,12 +67,17 @@ const showGameOverActions = (reason) => {
   const panel = document.getElementById("readyPanel");
   const status = document.getElementById("readyStatus");
   const button = document.getElementById("readyButton");
+  const rematchStatus = document.getElementById("rematchStatus");
   if (!panel || !status || !button) return;
 
   panel.classList.remove("hidden");
   status.textContent = reason || "Game finished";
+  if (rematchStatus) {
+    rematchStatus.textContent = "";
+    rematchStatus.classList.add("hidden");
+  }
   button.disabled = false;
-  button.textContent = "Play Again";
+  button.textContent = "Request Rematch";
   canPlayAgain = true;
 };
 
@@ -178,10 +183,25 @@ document.querySelectorAll(".select-time").forEach((btn) => {
 socket.on("matchmaking:matched", ({ matchId, room, status }) => {
   myMatchId = matchId;
   myRoom = room;
+  chess.reset();
+  lastRenderedFen = null;
+  clickSource = null;
+  sourceSquare = null;
+  gameEnded = false;
+  canPlayAgain = false;
   localStorage.setItem("chess-match", matchId);
   localStorage.setItem("chess-room", room);
   document.getElementById("waiting")?.classList.add("hidden");
   gameStarted = status === "playing";
+  const readyButton = document.getElementById("readyButton");
+  const readyStatus = document.getElementById("readyStatus");
+  const rematchStatus = document.getElementById("rematchStatus");
+  if (readyButton) {
+    readyButton.textContent = "Ready";
+    readyButton.disabled = false;
+  }
+  if (readyStatus) readyStatus.textContent = "Match found";
+  if (rematchStatus) rematchStatus.classList.add("hidden");
   document
     .getElementById("readyPanel")
     ?.classList.toggle("hidden", gameStarted);
@@ -190,7 +210,15 @@ socket.on("matchmaking:matched", ({ matchId, room, status }) => {
 
 document.getElementById("readyButton")?.addEventListener("click", () => {
   if (canPlayAgain) {
-    window.location.href = "/game/chess";
+    if (!myMatchId) return;
+    socket.emit("game:rematch-request", { matchId: myMatchId });
+    document.getElementById("readyButton").disabled = true;
+    document.getElementById("readyStatus").textContent = "Rematch requested";
+    const rematchStatus = document.getElementById("rematchStatus");
+    if (rematchStatus) {
+      rematchStatus.textContent = "Waiting for opponent to accept";
+      rematchStatus.classList.remove("hidden");
+    }
     return;
   }
 
@@ -204,6 +232,24 @@ socket.on("game:ready-status", ({ players }) => {
   const readyCount = players.filter((player) => player.ready).length;
   const readyStatus = document.getElementById("readyStatus");
   if (readyStatus) readyStatus.textContent = `${readyCount}/2 ready`;
+});
+
+socket.on("game:rematch-status", ({ requested, needed }) => {
+  const status = document.getElementById("rematchStatus");
+  if (!status) return;
+
+  status.textContent = `${requested.length}/${needed.length} rematch requests`;
+  status.classList.remove("hidden");
+});
+
+socket.on("game:rematch-error", ({ message }) => {
+  const button = document.getElementById("readyButton");
+  const status = document.getElementById("rematchStatus");
+  if (button) button.disabled = false;
+  if (status) {
+    status.textContent = message || "Rematch unavailable";
+    status.classList.remove("hidden");
+  }
 });
 
 // Player assignment
@@ -273,21 +319,29 @@ socket.on("matchmaking:waiting", () => {
 });
 
 // Game aborted (disconnect or timeout)
-const handleGameEnded = (reason) => {
+const handleGameEnded = (reason, result) => {
   if (gameEnded) return;
   gameEnded = true;
   gameStarted = false;
   localStorage.removeItem("chess-match");
   localStorage.removeItem("chess-room");
-  showGameOverActions(reason);
+  const outcome =
+    result?.winner && playerRole
+      ? result.winner === playerRole
+        ? "You won"
+        : "You lost"
+      : result?.reason === "Draw."
+        ? "Draw"
+        : null;
+  showGameOverActions(outcome ? `${outcome}. ${reason || ""}`.trim() : reason);
 };
 
 socket.on("gameAborted", ({ reason }) => {
   handleGameEnded(reason);
 });
 
-socket.on("game:finished", ({ reason }) => {
-  handleGameEnded(reason);
+socket.on("game:finished", ({ reason, result }) => {
+  handleGameEnded(reason, result);
 });
 
 // Clock updates every second

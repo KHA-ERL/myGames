@@ -11,31 +11,22 @@
   <main class="dash-shell dash-grid">
     <section class="dash-topbar">
       <div class="player-chip">
-        <% if (user && user.avatar) { %>
+        <% if (user?.avatar) { %>
           <img class="dash-avatar" src="<%= user.avatar %>" alt="">
         <% } else { %>
           <div class="dash-avatar"><%= (user?.displayName || "G").charAt(0).toUpperCase() %></div>
         <% } %>
-        <div class="min-w-0">
-          <h1 class="dash-title truncate"><%= user?.displayName || "Guest Player" %> — <%= user?.ratings?.chess || 1200 %></h1>
+        <div>
+          <h1 class="dash-title"><%= user?.displayName || "Guest Player" %></h1>
           <div class="dash-subline">
-            <span class="status-online">Online</span>
-            <span>Chess lobby ready</span>
+            <span>Chess <%= user?.ratings?.chess || 1200 %></span>
+            <span><%= friends.length %> friends</span>
           </div>
         </div>
       </div>
-
       <div class="dash-actions">
         <a class="dash-btn dash-btn-primary" href="/play">Play</a>
-        <a class="dash-btn" href="/profile">Profile</a>
         <a class="dash-btn" href="/leaderboards">Leaders</a>
-        <% if (user) { %>
-          <form method="post" action="/auth/logout">
-            <button class="dash-btn" type="submit">Sign out</button>
-          </form>
-        <% } else { %>
-          <a class="dash-btn dash-btn-blue" href="/auth/google">Sign in with Google</a>
-        <% } %>
       </div>
     </section>
 
@@ -53,38 +44,14 @@
         <div class="metric-label">Chess rating</div>
       </div>
       <div class="metric-card">
-        <div class="metric-value"><%= playerSummary.recentMatches.length %></div>
-        <div class="metric-label">Recent matches</div>
+        <div class="metric-value"><%= friends.length %></div>
+        <div class="metric-label">Friends</div>
       </div>
-    </section>
-
-    <section class="game-grid">
-      <article class="game-card" data-category="board" data-game-id="chess">
-        <div class="game-card-inner">
-          <div>
-            <div class="card-kicker">Rated / 1v1</div>
-            <h2 class="text-2xl font-black">Chess</h2>
-          </div>
-          <div class="dash-muted">Server-authoritative games with clocks, Elo, history, and rematches.</div>
-          <a class="dash-btn dash-btn-primary text-center" href="/play">Enter Lobby</a>
-        </div>
-      </article>
-
-      <article class="game-card" data-category="quick" data-game-id="tictactoe">
-        <div class="game-card-inner">
-          <div>
-            <div class="card-kicker">Casual / quick</div>
-            <h2 class="text-2xl font-black">Tic-Tac-Toe</h2>
-          </div>
-          <div class="dash-muted">A fast second game plugged into the same matchmaking system.</div>
-          <a class="dash-btn text-center" href="/game/tic-tac-toe">Play Tic-Tac-Toe</a>
-        </div>
-      </article>
     </section>
 
     <section class="dash-panel">
       <div class="section-head">
-        <h2 class="section-title">Recent Matches</h2>
+        <h2 class="section-title">Match History</h2>
       </div>
       <% if (playerSummary.recentMatches.length === 0) { %>
         <div class="empty-state">No matches yet.</div>

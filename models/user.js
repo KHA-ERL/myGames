@@ -39,6 +39,26 @@ const UserSchema = new mongoose.Schema(
         default: 1200,
       },
     },
+    friends: {
+      type: [
+        {
+          userId: {
+            type: String,
+            required: true,
+          },
+          status: {
+            type: String,
+            enum: ["accepted"],
+            default: "accepted",
+          },
+          createdAt: {
+            type: Date,
+            default: Date.now,
+          },
+        },
+      ],
+      default: [],
+    },
   },
   { timestamps: true }
 );

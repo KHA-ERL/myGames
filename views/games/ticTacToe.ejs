@@ -5,30 +5,54 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title><%= title %></title>
     <link href="/public/css/output.css" rel="stylesheet" />
+    <link href="/public/css/dashboard.css" rel="stylesheet" />
   </head>
-  <body
-    class="bg-gray-900 text-white flex flex-col items-center justify-center min-h-screen space-y-4"
-  >
-    <h1 class="text-3xl font-bold"><%= title %></h1>
+  <body class="game-page">
+    <main class="game-shell">
+      <nav class="game-nav">
+        <a class="flex items-center gap-2 font-black text-xl" href="/play">
+          <span class="brand-mark">$</span>
+          <span>Play</span>
+        </a>
+        <div class="dash-actions">
+          <a class="dash-btn" href="/play">Lobby</a>
+          <a class="dash-btn" href="/profile">Profile</a>
+        </div>
+      </nav>
 
-    <div id="status" class="text-yellow-500">Choose play</div>
+      <section class="game-stage">
+        <div class="board-panel">
+          <div class="flex items-center justify-between gap-3 mb-5">
+            <div>
+              <div class="hero-eyebrow">Casual quick game</div>
+              <h1 class="text-3xl md:text-5xl font-black tracking-tight"><%= title %></h1>
+            </div>
+            <span class="hero-badge">LIVE</span>
+          </div>
 
-    <button id="joinGame" class="bg-blue-600 px-4 py-2 rounded-md">
-      Find Match
-    </button>
+          <div id="board" class="ttt-board" aria-label="Tic-Tac-Toe board"></div>
+        </div>
 
-    <div id="readyPanel" class="text-center space-y-3 hidden">
-      <div id="readyStatus" class="text-yellow-500">Match found</div>
-      <button id="readyButton" class="bg-green-600 px-4 py-2 rounded-md">
-        Ready
-      </button>
-    </div>
+        <aside class="game-side-panel">
+          <div>
+            <div class="hero-eyebrow">Match flow</div>
+            <h2 class="text-2xl font-black">Three marks, one rival.</h2>
+            <p class="dash-muted mt-2">A lightweight proof that games can share the same matchmaking core.</p>
+          </div>
 
-    <div
-      id="board"
-      class="grid grid-cols-3 gap-2 w-72 h-72"
-      aria-label="Tic-Tac-Toe board"
-    ></div>
+          <div id="status" class="game-status">Choose play</div>
+
+          <button id="joinGame" class="game-action">Find Match</button>
+
+          <div id="readyPanel" class="game-status hidden">
+            <div id="readyStatus">Match found</div>
+            <button id="readyButton" class="game-action w-full mt-3">Ready</button>
+          </div>
+
+          <a class="dash-btn text-center" href="/play">Back to lobby</a>
+        </aside>
+      </section>
+    </main>
 
     <script
       src="https://cdn.socket.io/4.8.1/socket.io.min.js"

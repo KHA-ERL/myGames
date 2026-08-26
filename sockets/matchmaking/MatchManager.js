@@ -73,6 +73,18 @@ class MatchManager {
   getPlayer(match, playerId) {
     return match.players.find((player) => player.playerId === playerId);
   }
+
+  getSnapshot() {
+    const matches = [...this.store.matches.values()];
+    return {
+      activeMatches: matches.length,
+      games: matches.reduce((summary, match) => {
+        summary[match.game] = summary[match.game] || { activeMatches: 0 };
+        summary[match.game].activeMatches += 1;
+        return summary;
+      }, {}),
+    };
+  }
 }
 
 module.exports = MatchManager;

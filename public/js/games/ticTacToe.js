@@ -20,12 +20,11 @@ function renderBoard(board = lastBoard, winningLine = []) {
 
   board.forEach((mark, index) => {
     const cell = document.createElement("button");
-    cell.className =
-      "bg-gray-800 border border-gray-600 text-5xl font-bold flex items-center justify-center";
+    cell.className = "";
     cell.style.aspectRatio = "1 / 1";
     cell.textContent = mark || "";
     cell.disabled = !gameStarted || Boolean(mark);
-    if (winningLine.includes(index)) cell.classList.add("bg-lime-700");
+    if (winningLine.includes(index)) cell.classList.add("is-winning");
     cell.addEventListener("click", () => {
       socket.emit("game:action", {
         matchId,

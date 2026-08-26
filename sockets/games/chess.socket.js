@@ -247,6 +247,29 @@ module.exports = {
     };
   },
 
+  createRematch(players, offer) {
+    const timeControl = Number(offer?.settings?.timeControl || 300);
+    const playersWithSides = players.map((player) => ({
+      ...player,
+      side: player.side === "w" ? "b" : "w",
+    }));
+
+    return {
+      players: playersWithSides,
+      settings: { timeControl, wager: 0 },
+      metadata: {
+        timeControl,
+        ratingsEnabled: true,
+        rematchOf: offer.originalMatchId,
+      },
+      state: {
+        chess: null,
+        clock: createClock(timeControl),
+        currentTurn: "w",
+      },
+    };
+  },
+
   createGame(match) {
     match.state.chess = new Chess();
   },
