@@ -73,8 +73,27 @@ npm install
 | `npm start`         | Starts backend server            |
 | `npm run dev`           | Uses nodemon backend server      |
 
+## AI engine and Bing indexing setup
+
+The app exposes crawl-friendly answer signals for Bing, Copilot, and other AI search systems:
+
+- `/robots.txt` allows public crawling and points crawlers to `/sitemap.xml`.
+- `/sitemap.xml` lists canonical public URLs with freshness metadata.
+- `/llms.txt` summarizes the app, live games, upcoming games, and primary URLs for AI tools that read it.
+- Public pages include canonical URLs, descriptions, Open Graph/Twitter metadata, and schema.org JSON-LD.
+- Personalized profile pages use `noindex,follow` so crawlers prioritize stable public pages.
+
+Production environment variables:
+
+| Variable | Purpose |
+| --- | --- |
+| `SITE_URL` | Canonical production origin, for example `https://play.example.com`. Falls back to `APP_URL` or the current request host. |
+| `SITE_IMAGE_URL` | Optional absolute URL for a real social preview image. Leave empty until the asset exists. |
+| `INDEXNOW_KEY` | Optional Bing/IndexNow API key. When set, the app serves `/<INDEXNOW_KEY>.txt` and `/indexnow.json` reports the URL list and key location. |
+
+For Bing-first indexing, verify the domain in Bing Webmaster Tools, submit `/sitemap.xml`, set `INDEXNOW_KEY`, then submit changed URLs to IndexNow when public pages are added, updated, or removed.
+
 
 📜 License
 
 ISC License © 2025 KHA-ERL
-

@@ -9,6 +9,7 @@ const { httpIdentity } = require("./sockets/core/identity");
 const createSessionMiddleware = require("./config/session");
 const configurePassport = require("./config/passport");
 const { connectToMongoDb } = require("./utils/mongodb/database");
+const { safeJson } = require("./services/seo");
 
 const app = express();
 const sessionMiddleware = createSessionMiddleware();
@@ -19,6 +20,7 @@ app.set("trust proxy", 1);
 app.set("views", path.join(__dirname, "views"));   // <- explicitly point to /views
 app.set("view engine", "ejs");
 app.locals.socketUrl = process.env.SOCKET_URL || "";
+app.locals.safeJson = safeJson;
 app.use(express.urlencoded({ extended: true }));
 app.use("/public", express.static(path.join(__dirname, "public")));
 app.use(sessionMiddleware);
@@ -27,6 +29,7 @@ app.use(passport.session());
 app.use(httpIdentity);
 
 // --- Routes ---
+app.use("/", require("./routes/seo"));
 app.use("/", require("./routes/index"));
 app.use("/auth", require("./routes/authRoutes"));
 app.use("/game", require("./routes/games"));

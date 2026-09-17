@@ -1,0 +1,27 @@
+<% const pageSeo = typeof seo !== "undefined" ? seo : {}; %>
+<meta name="description" content="<%= pageSeo.description || '' %>" />
+<meta name="robots" content="<%= pageSeo.robots || 'index,follow,max-snippet:-1,max-image-preview:large,max-video-preview:-1' %>" />
+<% if (pageSeo.keywords && pageSeo.keywords.length) { %>
+  <meta name="keywords" content="<%= pageSeo.keywords.join(', ') %>" />
+<% } %>
+<% if (pageSeo.canonicalUrl) { %>
+  <link rel="canonical" href="<%= pageSeo.canonicalUrl %>" />
+<% } %>
+<meta property="og:site_name" content="$Play" />
+<meta property="og:title" content="<%= pageSeo.title || title %>" />
+<meta property="og:description" content="<%= pageSeo.description || '' %>" />
+<meta property="og:type" content="<%= pageSeo.type || 'website' %>" />
+<% if (pageSeo.canonicalUrl) { %>
+  <meta property="og:url" content="<%= pageSeo.canonicalUrl %>" />
+<% } %>
+<% if (pageSeo.imageUrl) { %>
+  <meta property="og:image" content="<%= pageSeo.imageUrl %>" />
+<% } %>
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="<%= pageSeo.title || title %>" />
+<meta name="twitter:description" content="<%= pageSeo.description || '' %>" />
+<% if (pageSeo.schema && pageSeo.schema.length) { %>
+  <% pageSeo.schema.forEach((schemaBlock) => { %>
+    <script type="application/ld+json"><%- safeJson(schemaBlock) %></script>
+  <% }) %>
+<% } %>
